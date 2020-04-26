@@ -6,7 +6,7 @@ export function secureHtmlString(input: string): string {
   return striptags(input);
 }
 
-export function setPassword(password: string): string {
+export function hashPassword(password: string): string {
   return crypto.createHash('md5').update(password).digest('hex');
 }
 
