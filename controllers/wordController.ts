@@ -6,10 +6,10 @@ import {JwtManager} from "@overnightjs/jwt";
 import { getLanguages } from '../services/language.service';
 import {Word} from "../models/word";
 
-@Controller('data')
+@Controller('word')
 @ClassMiddleware(CORS)
 export class WordController {
-  @Get('word/:uniqueId')
+  @Get(':uniqueId')
   @Middleware(JwtManager.middleware)
   private async getWord(req: Request, res: Response) {
     const uniqueId = req.params.uniqueId;

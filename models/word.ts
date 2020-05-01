@@ -15,7 +15,9 @@ const schema = new mongoose.Schema({
   forms: {type: [String], set: secureHtmlStringArray},
   originalLang: {type: String, set: secureHtmlStringArray},
   translatedLang: {type: String, set: secureHtmlStringArray},
-  remarks: {type: String, set: secureHtmlString}
+  remarks: {type: String, set: secureHtmlString},
+  userCreated: {type: String, required: true},
+  usersCopied: {type: [String]}
 });
 
 export const Word = mongoose.model('Word', schema);
