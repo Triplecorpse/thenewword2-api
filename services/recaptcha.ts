@@ -1,4 +1,6 @@
 import * as request from 'request';
+import * as dotenv from "dotenv";
+dotenv.config();
 
 const privateKey: string = process.env.RECAPTCHA_SECRET as string;
 

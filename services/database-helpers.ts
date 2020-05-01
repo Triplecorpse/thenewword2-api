@@ -1,6 +1,8 @@
 import * as striptags from "striptags";
 import * as crypto from "crypto";
 import {IUser} from "../interfaces/IUser";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 export function secureHtmlString(input: string): string {
   return striptags(input);
