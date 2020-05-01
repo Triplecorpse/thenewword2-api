@@ -4,13 +4,17 @@ import {CORS} from "../services/CORS";
 import {countries, languagesAll} from "countries-list";
 import {JwtManager} from "@overnightjs/jwt";
 import { getLanguages } from '../services/language.service';
+import {Word} from "../models/word";
 
 @Controller('data')
 @ClassMiddleware(CORS)
-export class HelperController {
-  @Get('languages')
-  // @Middleware(JwtManager.middleware)
-  private getLanguages(req: Request, res: Response) {
+export class WordController {
+  @Get('word/:uniqueId')
+  @Middleware(JwtManager.middleware)
+  private async getWord(req: Request, res: Response) {
+    const uniqueId = req.params.uniqueId;
+
+    const word = await Word.findOne({uniqueId});
 
     res.json(getLanguages());
   }

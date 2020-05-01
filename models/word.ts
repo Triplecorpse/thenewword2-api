@@ -8,6 +8,7 @@ import {
 
 const schema = new mongoose.Schema({
   word: {type: String, required: true, set: secureHtmlString},
+  uniqueId: {type: String, required: true},
   translations: {type: [String], required: true, set: secureHtmlStringArray},
   speechPart: {type: String, validate: validateSpeechPart},
   gender: {type: String, validate: validateGender},
