@@ -36,6 +36,7 @@
     "@overnightjs/jwt": "^1.1.15",
     "@overnightjs/logger": "^1.1.10",
     "body-parser": "^1.19.0",
+    "countries-list": "^2.5.4",
     "express": "^4.17.1",
     "mongoose": "^5.9.10",
     "request": "^2.88.2",
