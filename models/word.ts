@@ -17,7 +17,8 @@ const schema = new mongoose.Schema({
   translatedLang: {type: String, set: secureHtmlStringArray},
   remarks: {type: String, set: secureHtmlString},
   userCreated: {type: String, required: true},
-  usersCopied: {type: [String]}
+  usersCopied: {type: [String]},
+  stressIndex: {type: Number}
 });
 
 export const Word = mongoose.model('Word', schema);
