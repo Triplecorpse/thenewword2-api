@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import {ClassMiddleware, Controller, Middleware, Post, Put} from '@overnightjs/core';
+import {ClassMiddleware, Controller, Get, Middleware, Post, Put} from '@overnightjs/core';
 import {Logger} from '@overnightjs/logger';
 import {User} from "../models/user";
 import {IUser} from "../interfaces/IUser";
@@ -9,11 +9,19 @@ import {JwtManager} from "@overnightjs/jwt";
 import {validateRecaptcha} from "../services/recaptcha";
 import {hashPassword} from "../services/database-helpers";
 import {CORS} from "../services/CORS";
-import has = Reflect.has;
 
 @Controller('user')
 @ClassMiddleware(CORS)
 export class UserController {
+  @Get('validate')
+  @Middleware(JwtManager.middleware)
+  private validateUser(req: Request, res: Response) {
+    res.sendStatus(200)
+      // .header('Access-Control-Allow-Headers:Origin,X-Requested-With,Content-Type,Accept')
+      // .header('Access-Control-Allow-Methods: GET,POST,PUT,DELETE')
+      // .header('Access-Control-Allow-Origin: http://localhost:3000');
+  }
+
   @Put()
   @Middleware(JwtManager.middleware)
   private putUser(req: Request, res: Response) {
