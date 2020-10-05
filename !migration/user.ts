@@ -1,0 +1,1 @@
+export const createTableQ = 'CREATE TABLE users (id integer, login text, email text)';
