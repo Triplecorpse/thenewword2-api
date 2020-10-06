@@ -18,6 +18,28 @@ CREATE TABLE IF NOT EXISTS tnw2.words (
     stress_letter_index smallint
 );
 CREATE TABLE IF NOT EXISTS tnw2.relation_words_users_copied (
-    userId integer NOT NULL REFERENCES tnw2.users(id),
-    wordId integer NOT NULL REFERENCES tnw2.words(id)
+    user_id integer NOT NULL REFERENCES tnw2.users(id),
+    word_id integer NOT NULL REFERENCES tnw2.words(id)
+);
+
+CREATE TABLE IF NOT EXISTS tnw2.word_sets (
+    id serial PRIMARY KEY,
+    title text NOT NULL,
+    user_created integer REFERENCES tnw2.users(id)
+);
+CREATE TABLE IF NOT EXISTS tnw2.relation_words_word_sets (
+    word_set_id integer NOT NULL REFERENCES tnw2.word_sets(id),
+    word_id integer NOT NULL REFERENCES tnw2.words(id)
+);
+CREATE TABLE IF NOT EXISTS tnw2.relation_users_word_sets (
+    user_id integer NOT NULL REFERENCES tnw2.users(id),
+    word_set_id integer NOT NULL REFERENCES tnw2.word_sets(id)
+);
+
+CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
+    user integer NOT NULL REFERENCES tnw2.users(id),
+    word integer NOT NULL REFERENCES tnw2.words(id),
+    right_times_guessed integer DEFAULT 0,
+    false_times_guessed integer DEFAULT 0,
+    partly_times_guessed integer DEFAULT 0
 );
