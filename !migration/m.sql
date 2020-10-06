@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS tnw2.relation_users_word_sets (
 );
 
 CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
+    id serial PRIMARY KEY,
     user_id integer NOT NULL REFERENCES tnw2.users(id),
     word_id integer NOT NULL REFERENCES tnw2.words(id),
     right_times_guessed integer DEFAULT 0,
