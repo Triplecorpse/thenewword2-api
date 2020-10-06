@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as dotenv from 'dotenv';
 import {Client} from 'pg';
-import {createTableQ} from "./!migration/user";
+import {createUserTableQ} from "./!migration/user";
 
 dotenv.config();
 
@@ -17,7 +17,7 @@ const client = new Client(
 );
 
 client.connect()
-    .then(() => client.query(createTableQ))
+    .then(() => client.query(createUserTableQ))
     .then((r) => {
         console.log(r);
     })
