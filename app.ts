@@ -1,7 +1,8 @@
 import * as express from 'express';
 import * as dotenv from 'dotenv';
 import {Client} from 'pg';
-import {createUserTableQ} from "./!migration/user";
+import * as fs from "fs";
+import * as util from "util";
 
 dotenv.config();
 
@@ -17,11 +18,11 @@ const client = new Client(
 );
 
 client.connect()
-    .then(() => client.query(createUserTableQ))
-    .then((r) => {
-        console.log(r);
+    .then(() => util.promisify(fs.readFile)('sql_scripts/init_tables.sql', 'UTF8'))
+    .then(r => client.query(r))
+    .catch(error => {throw error})
+    .then(() => {
+        app.listen(process.env.PORT, () => {
+            console.log('listening on port', process.env.PORT);
+        });
     })
-
-app.listen(process.env.PORT, () => {
-    console.log('listening on port', process.env.PORT);
-});
