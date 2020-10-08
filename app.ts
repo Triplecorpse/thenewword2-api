@@ -3,10 +3,13 @@ import * as dotenv from 'dotenv';
 import {Client} from 'pg';
 import * as fs from "fs";
 import * as util from "util";
+import {userRouter} from "./routes/user";
+import * as bodyParser from "body-parser";
 
 dotenv.config();
 
 const app = express();
+const router = express.Router();
 const client = new Client(
     {
         user: process.env.PGUSER,
@@ -17,6 +20,8 @@ const client = new Client(
     }
 );
 
+app.use(bodyParser.json())
+
 client.connect()
     .then(() => util.promisify(fs.readFile)('sql_scripts/init_tables.sql', 'UTF8'))
     .then(r => client.query(r))
@@ -26,3 +31,5 @@ client.connect()
             console.log('listening on port', process.env.PORT);
         });
     })
+
+router.use('/user', userRouter);

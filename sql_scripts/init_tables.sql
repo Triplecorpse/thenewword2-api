@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS tnw2.users (
     id serial PRIMARY KEY,
     login text NOT NULL UNIQUE CHECK(login != ''),
     password text NOT NULL,
+    satl text NOT NULL,
     email text NOT NULL UNIQUE CHECK(email != '')
 );
 CREATE TABLE IF NOT EXISTS tnw2.words (
