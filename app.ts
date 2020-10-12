@@ -5,11 +5,11 @@ import * as fs from "fs";
 import * as util from "util";
 import {userRouter} from "./routes/user";
 import * as bodyParser from "body-parser";
+import {NextFunction, Request, Response} from "express";
 
 dotenv.config();
 
 const app = express();
-const router = express.Router();
 const client = new Client(
     {
         user: process.env.PGUSER,
@@ -20,7 +20,13 @@ const client = new Client(
     }
 );
 
-app.use(bodyParser.json())
+declare global {
+    namespace Express {
+        export interface Request {
+            isDevMode?: boolean
+        }
+    }
+}
 
 client.connect()
     .then(() => util.promisify(fs.readFile)('sql_scripts/init_tables.sql', 'UTF8'))
@@ -32,4 +38,15 @@ client.connect()
         });
     })
 
-router.use('/user', userRouter);
+app.use(bodyParser.urlencoded({extended: true}));
+app.use((req: Request, res: Response, next: NextFunction) => {
+    if (process.env.MODE === 'development') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', '*');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+        req.isDevMode = true;
+    }
+
+    next();
+});
+app.use('/user', userRouter);

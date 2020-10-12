@@ -18,26 +18,25 @@
     </label>
 </form>
 <hr>
-<form>
+<form action="http://localhost:3000/user/register" method="post">
     <p>Register</p>
     <label>
         Username
-        <input type="text">
+        <input type="text" name="login">
     </label>
-
     <label>
         Email
-        <input type="email">
+        <input type="email" name="email">
     </label>
-
     <label>
         Password
-        <input type="password">
+        <input type="password" name="password">
     </label>
     <label>
         Password Repeat
         <input type="password">
     </label>
+    <button>Register</button>
 </form>
 </body>
 </html>
