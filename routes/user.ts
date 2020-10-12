@@ -3,6 +3,8 @@ import {Request, Response} from "express";
 import * as bcrypt from "bcrypt";
 import * as util from 'util';
 import {queryDatabase} from "../services/db";
+import {IUserTokenPayload} from "../interfaces/IUserTokenPayload";
+import {jwtSign} from "../services/jwt";
 
 export const userRouter = express.Router();
 const saltRounds = 10;
@@ -41,7 +43,16 @@ userRouter.post('/login', async (req: Request, res: Response) => {
             });
 
         if (compareResult) {
-            res.sendStatus(200);
+            const payload: IUserTokenPayload = {
+                host: req.hostname,
+                IP: req.ip,
+                password: user.password,
+                UA: req.get('user-agent') as string,
+                login
+            }
+            const webtoken = await jwtSign(payload);
+
+            res.status(200).send(webtoken);
             return;
         }
     }
