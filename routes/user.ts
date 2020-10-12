@@ -35,12 +35,16 @@ userRouter.post('/login', async (req: Request, res: Response) => {
 
     if (dbResult.rowCount) {
         const user = dbResult.rows[0];
-
         const compareResult = await util.promisify(bcrypt.compare)(password, user.password)
             .catch(error => {
                 res.status(400).json(error);
                 throw error;
             });
+
+        if (user.login !== login) {
+            res.sendStatus(400);
+            return;
+        }
 
         if (compareResult) {
             const payload: IUserTokenPayload = {
