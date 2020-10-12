@@ -5,17 +5,18 @@
     <title>User Queries</title>
 </head>
 <body>
-<form>
+<form action="http://localhost:3000/user/login" method="post">
     <p>Login</p>
     <label>
         Username
-        <input type="text">
+        <input type="text" name="login">
     </label>
 
     <label>
         Password
-        <input type="password">
+        <input type="password" name="password">
     </label>
+    <button>Login</button>
 </form>
 <hr>
 <form action="http://localhost:3000/user/register" method="post">
