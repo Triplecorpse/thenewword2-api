@@ -3,41 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <title>User Queries</title>
+    <style>
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        h3 {
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
-<form action="http://localhost:3000/user/login" method="post">
-    <p>Login</p>
-    <label>
-        Username
-        <input type="text" name="login">
-    </label>
+<div style="height: 100vh; display:flex; align-items: center; justify-content: center">
+    <form style="border: 1px solid black; padding: 10px; width: 500px" action="http://localhost:3000/user/login"
+          method="post">
+        <h3>Login</h3>
+        <label>
+            Username
+            <input type="text" name="login">
+        </label>
 
-    <label>
-        Password
-        <input type="password" name="password">
-    </label>
-    <button>Login</button>
-</form>
-<hr>
-<form action="http://localhost:3000/user/register" method="post">
-    <p>Register</p>
-    <label>
-        Username
-        <input type="text" name="login">
-    </label>
-    <label>
-        Email
-        <input type="email" name="email">
-    </label>
-    <label>
-        Password
-        <input type="password" name="password">
-    </label>
-    <label>
-        Password Repeat
-        <input type="password">
-    </label>
-    <button>Register</button>
-</form>
+        <label>
+            Password
+            <input type="password" name="password">
+        </label>
+        <button>Login</button>
+    </form>
+    <form style="border: 1px solid black; padding: 10px; width: 500px; margin-left: 20px;"
+          action="http://localhost:3000/user/register" method="post">
+        <h3>Register</h3>
+        <label>
+            Username
+            <input type="text" name="login">
+        </label>
+        <label>
+            Email
+            <input type="email" name="email">
+        </label>
+        <label>
+            Password
+            <input type="password" name="password">
+        </label>
+        <label>
+            Password Repeat
+            <input type="password">
+        </label>
+        <button>Register</button>
+    </form>
+</div>
 </body>
 </html>

@@ -5,6 +5,7 @@ import * as util from 'util';
 import {queryDatabase} from "../services/db";
 import {IUserTokenPayload} from "../interfaces/IUserTokenPayload";
 import {jwtSign} from "../services/jwt";
+import {IUserDto} from "../interfaces/IUser";
 
 export const userRouter = express.Router();
 const saltRounds = 10;
@@ -24,7 +25,7 @@ userRouter.post('/register', async (req: Request, res: Response) => {
 });
 
 userRouter.post('/login', async (req: Request, res: Response) => {
-    const {login, password} = req.body;
+    const {login, password}: IUserDto = req.body;
     const query = `SELECT DISTINCT ON(login) login, password FROM tnw2.users WHERE login = '${login}'`;
 
     const dbResult = await queryDatabase(query)
@@ -34,7 +35,7 @@ userRouter.post('/login', async (req: Request, res: Response) => {
         });
 
     if (dbResult.rowCount) {
-        const user = dbResult.rows[0];
+        const user: IUserDto = dbResult.rows[0];
         const compareResult = await util.promisify(bcrypt.compare)(password, user.password)
             .catch(error => {
                 res.status(400).json(error);
@@ -63,3 +64,31 @@ userRouter.post('/login', async (req: Request, res: Response) => {
 
     res.sendStatus(401);
 });
+
+userRouter.post('/modify', async (req: Request, res: Response) => {
+    const newUser: IUserDto = req.body;
+
+    if (req.isUserVerified) {
+        const query = `UPDATE tnw2.users SET (email, password) = (${newUser.email}, ${newUser.password}) WHERE login = ${newUser.login} RETURNING *`;
+
+        const result = await queryDatabase(query)
+            .catch(error => {
+           res.sendStatus(500);
+           throw error;
+        });
+
+        if (result.rowCount === 1 && result.rows[0]) {
+            const user: IUserDto = result.rows[0];
+
+            if (user.login !== newUser.login) {
+                res.sendStatus(400);
+            }
+
+            res.sendStatus(200);
+        } else {
+            res.sendStatus(400);
+        }
+    } else {
+        res.sendStatus(401);
+    }
+})

@@ -4,6 +4,7 @@ import {userRouter} from "./routes/user";
 import * as bodyParser from "body-parser";
 import {NextFunction, Request, Response} from "express";
 import {connectToDatabase} from "./services/db";
+import {jwtVerify} from "./services/jwt";
 
 dotenv.config();
 
@@ -12,7 +13,8 @@ const app = express();
 declare global {
     namespace Express {
         export interface Request {
-            isDevMode?: boolean
+            isDevMode?: boolean;
+            isUserVerified?: boolean;
         }
     }
 }
@@ -34,6 +36,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
         req.isDevMode = true;
     }
 
+    next();
+});
+app.use(async (req: Request, res: Response, next: NextFunction) => {
+    req.isUserVerified = await jwtVerify(req.body.token, req);
     next();
 });
 app.use('/user', userRouter);
