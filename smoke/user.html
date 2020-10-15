@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="padding: 0;">
 <head>
     <meta charset="UTF-8">
     <title>User Queries</title>
@@ -14,10 +14,9 @@
         }
     </style>
 </head>
-<body>
-<div style="height: 100vh; display:flex; align-items: center; justify-content: center">
-    <form style="border: 1px solid black; padding: 10px; width: 500px" action="http://localhost:3000/user/login"
-          method="post">
+<body style="padding: 0; margin: 0;">
+<div style="height: 50vh; display:flex; align-items: center; justify-content: center">
+    <form id="login-form" style="border: 1px solid black; padding: 10px; width: 500px">
         <h3>Login</h3>
         <label>
             Username
@@ -30,7 +29,7 @@
         </label>
         <button>Login</button>
     </form>
-    <form style="border: 1px solid black; padding: 10px; width: 500px; margin-left: 20px;"
+    <form id="register-form" style="border: 1px solid black; padding: 10px; width: 500px; margin-left: 20px;"
           action="http://localhost:3000/user/register" method="post">
         <h3>Register</h3>
         <label>
@@ -52,5 +51,49 @@
         <button>Register</button>
     </form>
 </div>
+<div style="height: 50vh;">
+    <h3>Last Server Response</h3>
+    <p>Status: <span id="response-status"></span></p>
+    <hr>
+    <p>Body: <span id="response-body"></span></p>
+</div>
+<script>
+    document.getElementById('login-form').onsubmit = async function(e) {
+      e.preventDefault();
+      const fragments = [];
+      new FormData(document.getElementById('login-form')).forEach((value, key) => {
+        fragments.push(`${key}=${value}`);
+      });
+      const result = await fetch('http://localhost:3000/user/login',
+        {
+          method: 'post',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: fragments.join('&')
+        });
+      showServerResponse(result);
+    };
+
+    document.getElementById('register-form').onsubmit = async function(e) {
+      e.preventDefault();
+      const fragments = [];
+      new FormData(document.getElementById('register-form')).forEach((value, key) => {
+        fragments.push(`${key}=${value}`);
+      });
+      const result = await fetch('http://localhost:3000/user/register',
+        {
+          method: 'post',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: fragments.join('&')
+        });
+      showServerResponse(result);
+    };
+
+    async function showServerResponse(res) {
+      // debugger
+      const body = await res.text();
+      document.getElementById('response-status').innerHTML = res.status;
+      document.getElementById('response-body').innerHTML = body;
+    }
+</script>
 </body>
 </html>
