@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Word Tester</title>
+    <style>
+        label {
+            margin: 0;
+            display: block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<form id="new-word">
+    <label for="token">Token</label>
+    <textarea name="token" id="token" cols="30" rows="10"></textarea>
+    <h3>Add a new word</h3>
+    <label>
+        Word
+        <input type="text" name="word">
+    </label>
+    <label>
+        Comma separated translations
+        <input type="text" name="translations">
+    </label>
+    <label>
+        Part of Speech
+        <select name="speech_part" id="speech_part"></select>
+    </label>
+    <label>
+        Gender
+        <select name="gender" id="gender"></select>
+    </label>
+    <label>
+        Comma separated forms
+        <input type="text" name="forms">
+    </label>
+    <label>
+        Any Remarks
+        <input type="text" name="remarks">
+    </label>
+    <label>
+        Stress Letter Index
+        <input type="number" name="stress_letter_index">
+    </label>
+    <button>Add Word</button>
+</form>
+<script>
+  (function () {
+    const speechPartsEl = document.getElementById('speech_part');
+    const genderEl = document.getElementById('gender');
+    const newWordForm = document.getElementById('new-word');
+    fetch('http://localhost:3000/word/metadata')
+      .then(r => r.json())
+      .then(r => {
+        const genderOptionEls = r.genders.map(({title}) => {
+          const optionEl = document.createElement('option');
+
+          optionEl.innerHTML = title;
+          optionEl.value = title;
+
+          return optionEl;
+        })
+        const speechPartsOptionEls = r.speechParts.map(({title}) => {
+          const optionEl = document.createElement('option');
+
+          optionEl.innerHTML = title;
+          optionEl.value = title;
+
+          return optionEl;
+        })
+
+        genderEl.append(...genderOptionEls);
+        speechPartsEl.append(...speechPartsOptionEls);
+      });
+
+    newWordForm.onsubmit = async function (e) {
+      e.preventDefault();
+      const fragments = [];
+      new FormData(newWordForm).forEach((value, key) => {
+        fragments.push(`${key}=${value}`);
+      });
+      const result = await fetch('http://localhost:3000/word/add',
+        {
+          method: 'post',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: fragments.join('&')
+        });
+      showServerResponse(result);
+    }
+
+    async function showServerResponse(res) {
+      const body = await res.text();
+      document.getElementById('response-status').innerHTML = res.status;
+      document.getElementById('response-body').innerHTML = body;
+    }
+  })()
+</script>
+</body>
+</html>

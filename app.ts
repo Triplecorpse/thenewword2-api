@@ -5,6 +5,7 @@ import * as bodyParser from "body-parser";
 import {NextFunction, Request, Response} from "express";
 import {connectToDatabase} from "./services/db";
 import {jwtVerify} from "./services/jwt";
+import {wordRouter} from "./routes/word";
 
 dotenv.config();
 
@@ -43,3 +44,4 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
     next();
 });
 app.use('/user', userRouter);
+app.use('/word', wordRouter);

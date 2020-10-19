@@ -89,7 +89,6 @@
     };
 
     async function showServerResponse(res) {
-      // debugger
       const body = await res.text();
       document.getElementById('response-status').innerHTML = res.status;
       document.getElementById('response-body').innerHTML = body;
