@@ -5,6 +5,7 @@ import {Request} from "express";
 import {IUserTokenPayload} from "../interfaces/IUserTokenPayload";
 import {queryDatabase} from "./db";
 import * as bcrypt from "bcrypt";
+import {User} from "../models/User";
 
 dotenv.config();
 
@@ -12,12 +13,12 @@ export async function jwtSign(payload: any): Promise<string> {
     return util.promisify(jwt.sign)(payload, process.env.WEB_TOKEN as string) as Promise<string>;
 }
 
-export function jwtVerify(token: string, req: Request): Promise<boolean> {
+export function jwtVerify(token: string, req: Request): Promise<User | null> {
     if (!token) {
-        return Promise.resolve(false);
+        return Promise.resolve(null);
     }
 
-    return new Promise<boolean>(async resolve => {
+    return new Promise<User | null>(async resolve => {
         const verificationResult: IUserTokenPayload = await util.promisify(jwt.verify)(token, process.env.WEB_TOKEN as string) as IUserTokenPayload;
 
         if (verificationResult) {
@@ -25,30 +26,15 @@ export function jwtVerify(token: string, req: Request): Promise<boolean> {
                 verificationResult.host === req.hostname &&
                 verificationResult.IP === req.ip &&
                 verificationResult.UA === req.get('user-agent') as string;
-            const query = `SELECT DISTINCT ON(login) login, password FROM tnw2.users WHERE login = '${verificationResult.login}'`;
-            const dbResult = await queryDatabase(query)
-                .catch(error => {
-                    resolve(false);
-                    throw error;
-                });
 
-            if (dbResult.length) {
-                const user = dbResult[0];
-                const compareResult = await util.promisify(bcrypt.compare)(verificationResult.password, user.password)
-                    .catch(() => {
-                        resolve(false);
-                    });
+            if (tokenMatchesUserParams) {
+                const user = new User();
+                const loadedUser = await user.load(verificationResult.login, verificationResult.password);
 
-                if (user.login !== verificationResult.login || !tokenMatchesUserParams) {
-                    resolve(false);
-                }
-
-                if (compareResult) {
-                    resolve(true);
-                }
+                resolve(loadedUser);
             }
         } else {
-            resolve(false);
+            resolve(null);
         }
     });
 }

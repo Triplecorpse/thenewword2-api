@@ -6,6 +6,7 @@ import {NextFunction, Request, Response} from "express";
 import {connectToDatabase} from "./services/db";
 import {jwtVerify} from "./services/jwt";
 import {wordRouter} from "./routes/word";
+import {User} from "./models/User";
 
 dotenv.config();
 
@@ -15,14 +16,14 @@ declare global {
     namespace Express {
         export interface Request {
             isDevMode?: boolean;
-            isUserVerified?: boolean;
+            user?: User;
         }
     }
 }
 
 connectToDatabase()
     .catch(error => {
-        console.log(error);
+        console.error(error);
         throw error
     })
     .then(() => {
@@ -43,7 +44,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 app.use(async (req: Request, res: Response, next: NextFunction) => {
-    req.isUserVerified = await jwtVerify(req.body.token, req);
+    req.user = await jwtVerify(req.body.token, req) as User;
     next();
 });
 app.use('/user', userRouter);

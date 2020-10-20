@@ -24,14 +24,14 @@ export class User {
 
     async load(loginOrEmail: string, password: string): Promise<User> {
         this.isLoaded = false;
-        const query = 'SELECT DISTINCT ON(login) login, password FROM tnw2.users WHERE login = $1 OR email = $1';
+        const query = 'SELECT DISTINCT ON(login) id, login, email, password FROM tnw2.users WHERE login = $1 OR email = $1';
         const dbResult = await queryDatabase(query, [loginOrEmail]);
 
         if (!dbResult.length) {
             throw new Error('USER_NOT_FOUND');
         }
 
-        const user: IUserDto = dbResult[0];
+        const user = dbResult[0];
         const compareResult = await util.promisify(bcrypt.compare)(password, user.password)
             .catch(error => {
                 console.error(error);
@@ -42,7 +42,10 @@ export class User {
             this.login = user.login;
             this.email = user.email;
             this.passwordHash = user.password;
+            this.dbid = user.id;
             this.isLoaded = true;
+
+            delete this.password;
 
             return this;
         } else {

@@ -1,8 +1,9 @@
 import {IWordDto} from "../interfaces/IWordDto";
 import {queryDatabase} from "../services/db";
+import {User} from "./User";
 
 export class Word {
-    id?: string;
+    dbid?: string;
     word?: string;
     translations?: string;
     speechPart?: string;
@@ -12,7 +13,7 @@ export class Word {
     translatedLanguage?: string;
     remarks?: string;
     stressLetterIndex?: number;
-    userCreated?: any;
+    userCreated?: User;
 
     constructor(word?: IWordDto) {
         this.word = word?.word;
@@ -24,7 +25,10 @@ export class Word {
         this.translatedLanguage = word?.translated_language;
         this.remarks = word?.remarks;
         this.stressLetterIndex = word?.stress_letter_index;
-        this.userCreated = word?.user_created;
+    }
+
+    setUserCreated(user: User) {
+        this.userCreated = user;
     }
 
     async save(): Promise<Word> {
@@ -38,18 +42,22 @@ export class Word {
                     this.translatedLanguage as string
                 ])
         ]);
-        const originalLanguageId = metadataResult$[2].find(({code2}) => code2 === this.originalLanguage);
-        const translatedLanguageId = metadataResult$[2].find(({code2}) => code2 === this.translatedLanguage);
+        const speechPartId = metadataResult$[0][0].id;
+        const genderId = metadataResult$[1][0].id;
+        const originalLanguageId = metadataResult$[2].find(({code2}) => code2 === this.originalLanguage).id;
+        const translatedLanguageId = metadataResult$[2].find(({code2}) => code2 === this.translatedLanguage).id;
+        const userCreatedId = this.userCreated?.dbid;
+
         return queryDatabase(query, [
             this.word as string,
-            this.translations as string,
-            this.speechPart as string,
-            this.gender as string,
-            this.forms as string,
+            this.translations?.split(','),
+            speechPartId,
+            genderId,
+            this.forms?.split(','),
             originalLanguageId,
             translatedLanguageId,
             this.remarks as string,
-            '',
+            userCreatedId,
             this.stressLetterIndex as number
         ]).then();
     }

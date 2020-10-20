@@ -2,6 +2,7 @@ import * as express from "express";
 import {Request, Response} from "express";
 import {queryDatabase} from "../services/db";
 import {Word} from "../models/Word";
+import {User} from "../models/User";
 
 export const wordRouter = express.Router();
 
@@ -17,11 +18,18 @@ wordRouter.get('/metadata', (req: Request, res: Response) => {
 });
 
 wordRouter.post('/add', async (req: Request, res: Response) => {
-    if (!req.isUserVerified) {
+    if (!req.user) {
         res.sendStatus(401);
     }
 
     const word = new Word(req.body);
+    word.setUserCreated(req.user as User);
 
-    console.log(word);
+    await word.save()
+        .catch(error => {
+            console.error(error);
+            res.sendStatus(500);
+        });
+
+    res.sendStatus(201);
 });

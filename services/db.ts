@@ -30,7 +30,7 @@ export async function connectToDatabase() {
     return pool.query(initQuery);
 }
 
-export async function queryDatabase<T = any>(query: string, params?: (string | number)[]): Promise<T[]> {
+export async function queryDatabase<T = any, K = any>(query: string, params?: K[]): Promise<T[]> {
     return pool.query(query, params)
         .catch(error => {
             console.error(error);

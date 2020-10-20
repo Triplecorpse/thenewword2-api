@@ -53,7 +53,7 @@ userRouter.post('/login', async (req: Request, res: Response) => {
 userRouter.post('/modify', async (req: Request, res: Response) => {
     const newUser: IUserDto = req.body;
 
-    if (req.isUserVerified) {
+    if (req.user) {
         const query = `UPDATE tnw2.users SET (email, password) = (${newUser.email}, ${newUser.password}) WHERE login = ${newUser.login} RETURNING *`;
 
         const result = await queryDatabase(query)

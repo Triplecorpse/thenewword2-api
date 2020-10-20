@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS tnw2.users (
 );
 CREATE TABLE IF NOT EXISTS tnw2.words (
     id serial PRIMARY KEY,
-    word text NOT NULL UNIQUE CHECK(word != ''),
+    word text NOT NULL CHECK(word != ''),
     translations text[],
     speech_part_id smallint REFERENCES tnw2.speech_parts(id) NOT NULL,
     gender_id smallint REFERENCES tnw2.genders(id) NOT NULL,
