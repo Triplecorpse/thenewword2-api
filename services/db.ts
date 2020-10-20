@@ -30,8 +30,13 @@ export async function connectToDatabase() {
     return pool.query(initQuery);
 }
 
-export async function queryDatabase(query: string) {
-    return pool.query(query);
+export async function queryDatabase<T = any>(query: string, params?: (string | number)[]): Promise<T[]> {
+    return pool.query(query, params)
+        .catch(error => {
+            console.error(error);
+            throw new Error('DATABASE_QUERY_ERROR');
+        })
+        .then(({rows}) => rows);
 }
 
 function createQueryForLanguages(): string {

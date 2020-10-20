@@ -5,17 +5,16 @@ import * as util from 'util';
 import {queryDatabase} from "../services/db";
 import {IUserTokenPayload} from "../interfaces/IUserTokenPayload";
 import {jwtSign} from "../services/jwt";
-import {IUserDto} from "../interfaces/IUser";
+import {IUserDto} from "../interfaces/IUserDto";
+import {User} from "../models/User";
 
 export const userRouter = express.Router();
 const saltRounds = 10;
 
 userRouter.post('/register', async (req: Request, res: Response) => {
-    const {login, email, password} = req.body;
-    const hash = await util.promisify(bcrypt.hash)(password, saltRounds);
-    const query = `INSERT INTO tnw2.users (login, password, email) VALUES('${login}', '${hash}', '${email}')`;
+    const user = new User(req.body);
 
-    await queryDatabase(query)
+    await user.save()
         .catch(error => {
             res.status(400).json(error);
             throw error;
@@ -25,44 +24,30 @@ userRouter.post('/register', async (req: Request, res: Response) => {
 });
 
 userRouter.post('/login', async (req: Request, res: Response) => {
-    const {login, password}: IUserDto = req.body;
-    const query = `SELECT DISTINCT ON(login) login, password FROM tnw2.users WHERE login = '${login}'`;
+    const user = new User();
 
-    const dbResult = await queryDatabase(query)
+    await user.load(req.body.login, req.body.password)
         .catch(error => {
-            res.status(400).json(error);
-            throw error;
+            console.error(error);
+            res.sendStatus(401);
         });
 
-    if (dbResult.rowCount) {
-        const user: IUserDto = dbResult.rows[0];
-        const compareResult = await util.promisify(bcrypt.compare)(password, user.password)
-            .catch(error => {
-                res.status(400).json(error);
-                throw error;
-            });
+    delete user.passwordHash;
 
-        if (user.login !== login) {
-            res.sendStatus(400);
-            return;
-        }
-
-        if (compareResult) {
-            const payload: IUserTokenPayload = {
-                host: req.hostname,
-                IP: req.ip,
-                password: user.password,
-                UA: req.get('user-agent') as string,
-                login
-            }
-            const webtoken = await jwtSign(payload);
-
-            res.status(200).send(webtoken);
-            return;
-        }
+    const payload: IUserTokenPayload = {
+        host: req.hostname,
+        IP: req.ip,
+        password: req.body.password,
+        UA: req.get('user-agent') as string,
+        login: req.body.login
     }
+    const webtoken = await jwtSign(payload)
+        .catch(error => {
+            console.error(error);
+            res.sendStatus(500);
+        });
 
-    res.sendStatus(401);
+    res.status(200).send(webtoken);
 });
 
 userRouter.post('/modify', async (req: Request, res: Response) => {
@@ -73,12 +58,12 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
 
         const result = await queryDatabase(query)
             .catch(error => {
-           res.sendStatus(500);
-           throw error;
-        });
+                res.sendStatus(500);
+                throw error;
+            });
 
-        if (result.rowCount === 1 && result.rows[0]) {
-            const user: IUserDto = result.rows[0];
+        if (result.length === 1 && result[0]) {
+            const user: IUserDto = result[0];
 
             if (user.login !== newUser.login) {
                 res.sendStatus(400);

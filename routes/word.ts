@@ -1,7 +1,7 @@
 import * as express from "express";
 import {Request, Response} from "express";
 import {queryDatabase} from "../services/db";
-import {languages} from "countries-list";
+import {Word} from "../models/Word";
 
 export const wordRouter = express.Router();
 
@@ -12,6 +12,16 @@ wordRouter.get('/metadata', (req: Request, res: Response) => {
 
     Promise.all([speechParts$, genders$, languages$])
         .then(([speechParts, genders, languages]) => {
-            res.json({speechParts: speechParts.rows, genders: genders.rows, languages: languages.rows});
+            res.json({speechParts: speechParts, genders: genders, languages: languages});
         })
+});
+
+wordRouter.post('/add', async (req: Request, res: Response) => {
+    if (!req.isUserVerified) {
+        res.sendStatus(401);
+    }
+
+    const word = new Word(req.body);
+
+    console.log(word);
 });

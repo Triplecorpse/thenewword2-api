@@ -32,8 +32,8 @@ export function jwtVerify(token: string, req: Request): Promise<boolean> {
                     throw error;
                 });
 
-            if (dbResult.rowCount) {
-                const user = dbResult.rows[0];
+            if (dbResult.length) {
+                const user = dbResult[0];
                 const compareResult = await util.promisify(bcrypt.compare)(verificationResult.password, user.password)
                     .catch(() => {
                         resolve(false);
