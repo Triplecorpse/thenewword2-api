@@ -21,6 +21,14 @@
         <input type="text" name="word">
     </label>
     <label>
+        From language
+        <select name="original_language" id="original_language"></select>
+    </label>
+    <label>
+        To language
+        <select name="translated_language" id="translated_language"></select>
+    </label>
+    <label>
         Comma separated translations
         <input type="text" name="translations">
     </label>
@@ -50,6 +58,8 @@
   (function () {
     const speechPartsEl = document.getElementById('speech_part');
     const genderEl = document.getElementById('gender');
+    const translatedLanguageEl = document.getElementById('translated_language');
+    const originalLanguageEl = document.getElementById('original_language');
     const newWordForm = document.getElementById('new-word');
     fetch('http://localhost:3000/word/metadata')
       .then(r => r.json())
@@ -61,7 +71,7 @@
           optionEl.value = title;
 
           return optionEl;
-        })
+        });
         const speechPartsOptionEls = r.speechParts.map(({title}) => {
           const optionEl = document.createElement('option');
 
@@ -69,10 +79,28 @@
           optionEl.value = title;
 
           return optionEl;
-        })
+        });
+        const languageOptionEls = r.languages.map(({code2, english_name}) => {
+          const optionEl = document.createElement('option');
+
+          optionEl.innerHTML = english_name;
+          optionEl.value = code2;
+
+          return optionEl;
+        });
+        const languageOption2Els = r.languages.map(({code2, english_name}) => {
+          const optionEl = document.createElement('option');
+
+          optionEl.innerHTML = english_name;
+          optionEl.value = code2;
+
+          return optionEl;
+        });
 
         genderEl.append(...genderOptionEls);
         speechPartsEl.append(...speechPartsOptionEls);
+        translatedLanguageEl.append(...languageOptionEls);
+        originalLanguageEl.append(...languageOption2Els);
       });
 
     newWordForm.onsubmit = async function (e) {

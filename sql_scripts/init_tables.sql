@@ -1,5 +1,3 @@
-CREATE SCHEMA IF NOT EXISTS tnw2 AUTHORIZATION postgres;
-
 CREATE TABLE IF NOT EXISTS tnw2.users (
     id serial PRIMARY KEY,
     login text NOT NULL UNIQUE CHECK(login != ''),
@@ -10,11 +8,11 @@ CREATE TABLE IF NOT EXISTS tnw2.words (
     id serial PRIMARY KEY,
     word text NOT NULL UNIQUE CHECK(word != ''),
     translations text[],
-    speech_part_id integer REFERENCES tnw2.speech_parts(id) NOT NULL,
-    gender_id integer REFERENCES tnw2.genders(id) NOT NULL,
+    speech_part_id smallint REFERENCES tnw2.speech_parts(id) NOT NULL,
+    gender_id smallint REFERENCES tnw2.genders(id) NOT NULL,
     forms text[],
-    original_language char(2),
-    translated_language char(2),
+    original_language smallint REFERENCES tnw2.languages(id) NOT NULL,
+    translated_language smallint REFERENCES tnw2.languages(id) NOT NULL,
     remarks text,
     user_created_id integer REFERENCES tnw2.users(id),
     stress_letter_index smallint

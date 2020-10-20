@@ -21,7 +21,10 @@ declare global {
 }
 
 connectToDatabase()
-    .catch(error => {throw error})
+    .catch(error => {
+        console.log(error);
+        throw error
+    })
     .then(() => {
         app.listen(process.env.PORT, () => {
             console.log('listening on port', process.env.PORT);

@@ -2,6 +2,7 @@ import {Pool} from "pg";
 import * as util from "util";
 import * as fs from "fs";
 import * as dotenv from "dotenv";
+import {languages} from "countries-list";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ export async function connectToDatabase() {
         const initStatic = await util.promisify(fs.readFile)('sql_scripts/init_static.sql', 'UTF8');
 
         await pool.query(initStatic);
+        await pool.query(createQueryForLanguages());
     }
 
     return pool.query(initQuery);
@@ -30,4 +32,20 @@ export async function connectToDatabase() {
 
 export async function queryDatabase(query: string) {
     return pool.query(query);
+}
+
+function createQueryForLanguages(): string {
+    let result = '';
+
+    Object.keys(languages).forEach((code2, index) => {
+        const languageObj: any = (languages as any)[code2];
+
+        result += `('${code2}', '${languageObj.name.replace("'", "''")}', '${languageObj.native.replace("'", "''")}')`;
+
+        if (index < Object.keys(languages).length - 1) {
+            result += ',';
+        }
+    });
+
+    return `INSERT INTO tnw2.languages (code2, english_name, native_name) VALUES ${result};`;
 }
