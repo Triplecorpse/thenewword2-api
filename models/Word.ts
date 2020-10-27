@@ -81,16 +81,21 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb>{
     convertToDto(): IWordDto {
         return <IWordDto>{
             user_created_id: this.userCreated?.dbid,
+            user_created: this.userCreated?.convertToDto(),
             stress_letter_index: this.stressLetterIndex,
             remarks: this.remarks,
             forms: this.forms,
             translations: this.translations,
             word: this.word,
             gender_id: this.gender?.dbid,
+            gender_name: this.gender?.body,
             id: this.dbid,
             original_language_id: this.originalLanguage?.dbid,
+            original_language_english_name: this.originalLanguage?.body.englishName,
             translated_language_id: this.translatedLanguage?.dbid,
-            speech_part_id: this.speechPart?.dbid
+            translated_language_english_name: this.translatedLanguage?.body.englishName,
+            speech_part_id: this.speechPart?.dbid,
+            speech_part_name: this.speechPart?.body
         };
     }
 
