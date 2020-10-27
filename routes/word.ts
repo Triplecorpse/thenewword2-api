@@ -3,6 +3,7 @@ import {Request, Response} from "express";
 import {queryDatabase} from "../services/db";
 import {Word} from "../models/Word";
 import {genders, languages, speechParts} from "../const/constData";
+import {IWordDb} from "../interfaces/db/IWordDb";
 
 export const wordRouter = express.Router();
 
@@ -20,7 +21,6 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
     }
 
     const word = new Word(req.body, req.user);
-    console.log(word);
 
     await word.save()
         .catch(error => {
@@ -36,13 +36,16 @@ wordRouter.post('/get', async (req: Request, res: Response) => {
         res.sendStatus(401);
     }
 
-    const query = 'SELECT word, translations, forms, remarks, stress_letter_index, tnw2.speech_parts.title, tnw2.genders.title FROM tnw2.words LEFT JOIN tnw2.speech_parts ON tnw2.words.speech_part_id=tnw2.speech_parts.id LEFT JOIN tnw2.genders ON tnw2.words.gender_id=tnw2.genders.id WHERE user_created_id = $1';
-    const dbresult = await queryDatabase(query, [req.user?.dbid])
-        .catch(() => {
+    const query = 'SELECT id FROM tnw2.words WHERE user_created_id = $1';
+    const wordIds: { id: number }[] = await queryDatabase<{ id: number }>(query, [req.user?.dbid])
+        .catch(error => {
             res.sendStatus(500);
+            throw error;
         });
+    const words = wordIds.map(() => new Word(undefined, req.user));
+    const words$ = wordIds.map(({id}, index) => words[index].loadFromDB(id));
 
-    res.send(dbresult);
+    await Promise.all(words$);
 
-    console.log(dbresult);
+    res.send(words.map(word => word.convertToDto()));
 });

@@ -43,21 +43,24 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb>{
         ]).then();
     }
 
-    async loadFromDB(id: number, filterData?: IWordFilterData): Promise<void> {
+    async loadFromDB(id: number, filterData?: IWordFilterData, user?: User): Promise<void> {
         const queryPart = this.createFilterDataSubquery(filterData);
-        const query = 'SELECT id, word, translations, forms, remarks, stress_letter_index, tnw2.speech_parts.title, tnw2.genders.title FROM tnw2.words LEFT JOIN tnw2.speech_parts ON tnw2.words.speech_part_id=tnw2.speech_parts.id LEFT JOIN tnw2.genders ON tnw2.words.gender_id=tnw2.genders.id WHERE id = $1' + queryPart;
+        const query = 'SELECT tnw2.words.id, word, translations, forms, remarks, stress_letter_index, tnw2.speech_parts.title AS speech_part, tnw2.genders.title AS gender, ol.english_name AS original_language, tl.english_name AS translated_language FROM tnw2.words LEFT JOIN tnw2.speech_parts ON tnw2.words.speech_part_id=tnw2.speech_parts.id LEFT JOIN tnw2.genders ON tnw2.words.gender_id=tnw2.genders.id LEFT JOIN tnw2.languages AS ol ON tnw2.words.original_language_id=ol.id LEFT JOIN tnw2.languages AS tl ON tnw2.words.translated_language_id=tl.id WHERE tnw2.words.id = $1' + queryPart.queryPart;
         const dbResult = await queryDatabase(query, [id, ...queryPart.params]);
 
         if (dbResult?.length) {
-            console.log(dbResult[0]);
-            // this.dbid = dbResult[0].id;
-            // this.userCreated = dbResult[0].uid;
-            // this.dbid = dbResult[0].id;
-            // this.dbid = dbResult[0].id;
-            // this.dbid = dbResult[0].id;
-            // this.dbid = dbResult[0].id;
-            // this.dbid = dbResult[0].id;
-            // this.dbid = dbResult[0].id;
+            const loadedWord = dbResult[0];
+            this.dbid = loadedWord.id;
+            this.speechPart = speechParts.find(sp => sp.body === loadedWord.speech_part);
+            this.gender = genders.find(g => g.body === loadedWord.gender);
+            this.originalLanguage = languages.find(l => l.body.englishName === loadedWord.original_language);
+            this.translatedLanguage = languages.find(l => l.body.englishName === loadedWord.translated_language);
+            this.word = loadedWord.word;
+            this.translations = loadedWord.translations;
+            this.forms = loadedWord.forms;
+            this.remarks = loadedWord.remarks;
+            this.stressLetterIndex = loadedWord.stress_letter_index;
+            this.userCreated = user;
         }
     }
 
