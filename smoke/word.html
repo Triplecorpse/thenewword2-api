@@ -12,50 +12,61 @@
     </style>
 </head>
 <body>
-<form id="new-word">
-    <label for="token">Token</label>
-    <textarea name="token" id="token" cols="30" rows="10">
-        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJob3N0IjoibG9jYWxob3N0IiwiSVAiOiI6OjEiLCJwYXNzd29yZCI6ImFkbWluIiwiVUEiOiJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvODYuMC40MjQwLjc1IFNhZmFyaS81MzcuMzYiLCJsb2dpbiI6ImFkbWluIiwiaWF0IjoxNjAzMjE1NjMyfQ.IL2LTlW2QHeQLgqD120nfrp93yYIFqNHzc4QkiSA_YE
-    </textarea>
-    <h3>Add a new word</h3>
-    <label>
-        Word
-        <input type="text" name="word">
-    </label>
-    <label>
-        From language
-        <select name="original_language" id="original_language"></select>
-    </label>
-    <label>
-        To language
-        <select name="translated_language" id="translated_language"></select>
-    </label>
-    <label>
-        Comma separated translations
-        <input type="text" name="translations">
-    </label>
-    <label>
-        Part of Speech
-        <select name="speech_part" id="speech_part"></select>
-    </label>
-    <label>
-        Gender
-        <select name="gender" id="gender"></select>
-    </label>
-    <label>
-        Comma separated forms
-        <input type="text" name="forms">
-    </label>
-    <label>
-        Any Remarks
-        <input type="text" name="remarks">
-    </label>
-    <label>
-        Stress Letter Index
-        <input type="number" name="stress_letter_index">
-    </label>
-    <button>Add Word</button>
-</form>
+<div style="display: flex">
+    <form id="new-word" style="padding: 20px; border: 1px solid black">
+        <label for="token">Token</label>
+        <textarea name="token" id="token" cols="30" rows="10">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJob3N0IjoibG9jYWxob3N0IiwiSVAiOiI6OjEiLCJwYXNzd29yZCI6ImVsZGFyIiwiVUEiOiJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvODYuMC40MjQwLjExMSBTYWZhcmkvNTM3LjM2IiwibG9naW4iOiJlbGRhciIsImlhdCI6MTYwMzc5NzA1NH0.a3V2a8CMjQh6ZRegYhax_bjckka3QKMvO7bjN81HkNY</textarea>
+        <h3>Add a new word</h3>
+        <label>
+            Word
+            <input type="text" name="word">
+        </label>
+        <label>
+            From language
+            <select name="original_language_id" id="original_language"></select>
+        </label>
+        <label>
+            To language
+            <select name="translated_language_id" id="translated_language"></select>
+        </label>
+        <label>
+            Comma separated translations
+            <input type="text" name="translations">
+        </label>
+        <label>
+            Part of Speech
+            <select name="speech_part_id" id="speech_part"></select>
+        </label>
+        <label>
+            Gender
+            <select name="gender_id" id="gender"></select>
+        </label>
+        <label>
+            Comma separated forms
+            <input type="text" name="forms">
+        </label>
+        <label>
+            Any Remarks
+            <input type="text" name="remarks">
+        </label>
+        <label>
+            Stress Letter Index
+            <input type="number" name="stress_letter_index">
+        </label>
+        <button>Add Word</button>
+    </form>
+    <form id="get-words" style="padding: 20px; border: 1px solid black">
+        <label for="token2">Token</label>
+        <textarea name="token" id="token2" cols="30" rows="10">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJob3N0IjoibG9jYWxob3N0IiwiSVAiOiI6OjEiLCJwYXNzd29yZCI6ImVsZGFyIiwiVUEiOiJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvODYuMC40MjQwLjExMSBTYWZhcmkvNTM3LjM2IiwibG9naW4iOiJlbGRhciIsImlhdCI6MTYwMzc5NzA1NH0.a3V2a8CMjQh6ZRegYhax_bjckka3QKMvO7bjN81HkNY</textarea>
+        <button>Get words for this user</button>
+    </form>
+</div>
+<div>
+    <h3>Status</h3>
+    <div id="response-status"></div>
+    <h3>Body</h3>
+    <div id="response-body"></div>
+</div>
 <script>
   (function () {
     const speechPartsEl = document.getElementById('speech_part');
@@ -66,35 +77,35 @@
     fetch('http://localhost:3000/word/metadata')
       .then(r => r.json())
       .then(r => {
-        const genderOptionEls = r.genders.map(({title}) => {
+        const genderOptionEls = r.genders.map(({id, title}) => {
           const optionEl = document.createElement('option');
 
           optionEl.innerHTML = title;
-          optionEl.value = title;
+          optionEl.value = id;
 
           return optionEl;
         });
-        const speechPartsOptionEls = r.speechParts.map(({title}) => {
+        const speechPartsOptionEls = r.speechParts.map(({id, title}) => {
           const optionEl = document.createElement('option');
 
           optionEl.innerHTML = title;
-          optionEl.value = title;
+          optionEl.value = id;
 
           return optionEl;
         });
-        const languageOptionEls = r.languages.map(({code2, english_name}) => {
+        const languageOptionEls = r.languages.map(({id, title}) => {
           const optionEl = document.createElement('option');
 
-          optionEl.innerHTML = english_name;
-          optionEl.value = code2;
+          optionEl.innerHTML = title;
+          optionEl.value = id;
 
           return optionEl;
         });
-        const languageOption2Els = r.languages.map(({code2, english_name}) => {
+        const languageOption2Els = r.languages.map(({id, title}) => {
           const optionEl = document.createElement('option');
 
-          optionEl.innerHTML = english_name;
-          optionEl.value = code2;
+          optionEl.innerHTML = title;
+          optionEl.value = id;
 
           return optionEl;
         });
@@ -112,6 +123,31 @@
         fragments.push(`${key}=${value}`);
       });
       const result = await fetch('http://localhost:3000/word/add',
+        {
+          method: 'post',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: fragments.join('&')
+        });
+      showServerResponse(result);
+    }
+
+    async function showServerResponse(res) {
+      const body = await res.text();
+      document.getElementById('response-status').innerHTML = res.status;
+      document.getElementById('response-body').innerHTML = body;
+    }
+  })();
+
+  (function () {
+    const getWordsForm = document.getElementById('get-words');
+
+    getWordsForm.onsubmit = async function (e) {
+      e.preventDefault();
+      const fragments = [];
+      new FormData(getWordsForm).forEach((value, key) => {
+        fragments.push(`${key}=${value}`);
+      });
+      const result = await fetch('http://localhost:3000/word/get',
         {
           method: 'post',
           headers: {'Content-Type': 'application/x-www-form-urlencoded'},

@@ -5,7 +5,7 @@ import * as util from 'util';
 import {queryDatabase} from "../services/db";
 import {IUserTokenPayload} from "../interfaces/IUserTokenPayload";
 import {jwtSign} from "../services/jwt";
-import {IUserDto} from "../interfaces/IUserDto";
+import {IUserDto} from "../interfaces/dto/IUserDto";
 import {User} from "../models/User";
 
 export const userRouter = express.Router();
@@ -26,7 +26,7 @@ userRouter.post('/register', async (req: Request, res: Response) => {
 userRouter.post('/login', async (req: Request, res: Response) => {
     const user = new User();
 
-    await user.load(req.body.login, req.body.password)
+    await user.loadFromDB(req.body.login, req.body.password)
         .catch(error => {
             console.error(error);
             res.sendStatus(401);
