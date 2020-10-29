@@ -75,4 +75,15 @@ export class User implements ICRUDEntity<IUserDto, IUserDb>{
         this.password = entity?.password as string;
         this.email = entity?.email as string;
     }
+
+    remove(): Promise<void> {
+        if (!this.dbid) {
+            throw new Error('NO_ID_PROVIDED');
+        }
+
+        const query = 'DELETE FROM tnw2.users WHERE id=$1';
+
+        return queryDatabase(query, [this.dbid]).then();
+
+    }
 }

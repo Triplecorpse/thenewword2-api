@@ -129,6 +129,6 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb>{
 
         const query = 'DELETE FROM tnw2.words WHERE id=$1';
 
-        return queryDatabase(query, [this.userCreated?.dbid]).then()
+        return queryDatabase(query, [this.dbid]).then();
     }
 }

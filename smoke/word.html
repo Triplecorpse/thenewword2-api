@@ -180,8 +180,20 @@
       const action = target.getAttribute('data-action');
       const id = target.parentNode.getAttribute('data-id');
 
+      const fragments = [];
+      new FormData(getWordsForm).forEach((value, key) => {
+        fragments.push(`${key}=${value}`);
+      });
+      fragments.push(`id=${id}`);
+
       if (action === 'edit') {
         setEditData(id)
+      } else if (action === 'remove') {
+        fetch('http://localhost:3000/word/remove', {
+          method: 'post',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: fragments.join('&')
+        });
       }
     }
 
