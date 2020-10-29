@@ -59,6 +59,18 @@
         <label for="token2">Token</label>
         <textarea name="token" id="token2" cols="30" rows="10">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJob3N0IjoibG9jYWxob3N0IiwiSVAiOiI6OjEiLCJwYXNzd29yZCI6ImVsZGFyIiwiVUEiOiJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvODYuMC40MjQwLjExMSBTYWZhcmkvNTM3LjM2IiwibG9naW4iOiJlbGRhciIsImlhdCI6MTYwMzc5NzA1NH0.a3V2a8CMjQh6ZRegYhax_bjckka3QKMvO7bjN81HkNY</textarea>
         <button>Get words for this user</button>
+        <div id="words-wrapper">
+
+        </div>
+        <div hidden>
+            <div class="word-wrapper" data-index="0">
+                <span class="word" style="font-weight: bold"></span>
+                <span class="forms" style="font-style: italic"></span>
+                <span class="translations"></span>
+                <button type="button">edit</button>
+                <button type="button">remove</button>
+            </div>
+        </div>
     </form>
 </div>
 <div>
@@ -140,6 +152,8 @@
 
   (function () {
     const getWordsForm = document.getElementById('get-words');
+    const wordResults = document.getElementById('words-wrapper');
+    const wordResult = document.getElementsByClassName('word-wrapper')[0];
 
     getWordsForm.onsubmit = async function (e) {
       e.preventDefault();
@@ -157,9 +171,27 @@
     }
 
     async function showServerResponse(res) {
-      const body = await res.text();
+      const body = await res.json();
+      wordResults.innerHTML = '';
+
+      const elements = body.map(word => {
+        const wordWrapperEl = wordResult.cloneNode();
+        wordWrapperEl.innerHTML = wordResult.innerHTML;
+        const wordEl = wordWrapperEl.getElementsByClassName('word')[0];
+        const formsEl = wordWrapperEl.getElementsByClassName('forms')[0];
+        const translationsEl = wordWrapperEl.getElementsByClassName('translations')[0];
+
+        wordEl.innerHTML = word.word;
+        formsEl.innerHTML = word.forms.join(', ');
+        translationsEl.innerHTML = word.translations.join(', ');
+
+        return wordWrapperEl;
+      });
+
+      wordResults.append(...elements);
+
       document.getElementById('response-status').innerHTML = res.status;
-      document.getElementById('response-body').innerHTML = body;
+      document.getElementById('response-body').innerHTML = JSON.stringify(body);
     }
   })()
 </script>
