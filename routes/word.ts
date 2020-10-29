@@ -20,6 +20,11 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
         res.sendStatus(401);
     }
 
+    if (req.body.id) {
+        res.send(400);
+        throw new Error('ID_IN_EDIT');
+    }
+
     const word = new Word(req.body, req.user);
 
     await word.save()
@@ -48,4 +53,30 @@ wordRouter.post('/get', async (req: Request, res: Response) => {
     await Promise.all(words$);
 
     res.send(words.map(word => word.convertToDto()));
+});
+
+wordRouter.put('/edit', async (req: Request, res: Response) => {
+    if (!req.user) {
+        res.sendStatus(401);
+    }
+
+    if (!req.body.id) {
+        res.send(400);
+        throw new Error('ID_NOT_EXISTS');
+    }
+
+    const word = new Word();
+    await word.loadFromDB(req.body.id, {}, req.user)
+        .catch(error => {
+            res.send(500);
+            throw error;
+        });
+    word.replaceWith(req.body);
+    await word.save()
+        .catch(error => {
+            res.send(500);
+            throw error;
+        });
+
+    res.sendStatus(200);
 });

@@ -27,9 +27,8 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb>{
     }
 
     async save(): Promise<void> {
-        const query = 'INSERT INTO tnw2.words (word, translations, speech_part_id, gender_id, forms, original_language_id, translated_language_id, remarks, user_created_id, stress_letter_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)';
-
-        return queryDatabase(query, [
+        let query;
+        const params = [
             this.word as string,
             this.translations?.split(','),
             this.speechPart?.dbid,
@@ -40,7 +39,18 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb>{
             this.remarks as string,
             this.userCreated?.dbid,
             this.stressLetterIndex as number
-        ]).then();
+        ];
+
+        if (this.dbid) {
+            query = 'UPDATE tnw2.words SET word=$1, translations=$2, speech_part_id=$3, gender_id=$4, forms=$5, original_language_id=$6, translated_language_id=$7, remarks=$8, user_created_id=$9, stress_letter_index=$10 WHERE id=$11';
+            params.push(this.dbid);
+        } else {
+            query = 'INSERT INTO tnw2.words (word, translations, speech_part_id, gender_id, forms, original_language_id, translated_language_id, remarks, user_created_id, stress_letter_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)';
+        }
+
+        console.log(query, params);
+
+        return queryDatabase(query, params).then();
     }
 
     async loadFromDB(id: number, filterData?: IWordFilterData, user?: User): Promise<void> {
@@ -109,6 +119,6 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb>{
         this.translatedLanguage = languages.find(({dbid}) => entity?.translated_language_id.toString() === dbid.toString());
         this.remarks = entity?.remarks;
         this.stressLetterIndex = entity?.stress_letter_index;
-        this.userCreated = user;
+        this.userCreated = user ? user : this.userCreated;
     }
 }
