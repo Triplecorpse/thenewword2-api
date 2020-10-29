@@ -17,9 +17,10 @@
         <label for="token">Token</label>
         <textarea name="token" id="token" cols="30" rows="10">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJob3N0IjoibG9jYWxob3N0IiwiSVAiOiI6OjEiLCJwYXNzd29yZCI6ImVsZGFyIiwiVUEiOiJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvODYuMC40MjQwLjExMSBTYWZhcmkvNTM3LjM2IiwibG9naW4iOiJlbGRhciIsImlhdCI6MTYwMzc5NzA1NH0.a3V2a8CMjQh6ZRegYhax_bjckka3QKMvO7bjN81HkNY</textarea>
         <h3>Add a new word</h3>
+        <input type="hidden" name="id" id="id">
         <label>
             Word
-            <input type="text" name="word">
+            <input type="text" name="word" id="word">
         </label>
         <label>
             From language
@@ -31,7 +32,7 @@
         </label>
         <label>
             Comma separated translations
-            <input type="text" name="translations">
+            <input type="text" name="translations" id="translations">
         </label>
         <label>
             Part of Speech
@@ -43,17 +44,17 @@
         </label>
         <label>
             Comma separated forms
-            <input type="text" name="forms">
+            <input type="text" name="forms" id="forms">
         </label>
         <label>
             Any Remarks
-            <input type="text" name="remarks">
+            <input type="text" name="remarks" id="remarks">
         </label>
         <label>
             Stress Letter Index
-            <input type="number" name="stress_letter_index">
+            <input type="number" name="stress_letter_index" id="stress_letter_index">
         </label>
-        <button>Add Word</button>
+        <button>Add/Edit Word</button>
     </form>
     <form id="get-words" style="padding: 20px; border: 1px solid black">
         <label for="token2">Token</label>
@@ -63,12 +64,12 @@
 
         </div>
         <div hidden>
-            <div class="word-wrapper" data-index="0">
+            <div class="word-wrapper" data-id="0">
                 <span class="word" style="font-weight: bold"></span>
                 <span class="forms" style="font-style: italic"></span>
                 <span class="translations"></span>
-                <button type="button">edit</button>
-                <button type="button">remove</button>
+                <button type="button" data-action="edit">edit</button>
+                <button type="button" data-action="remove">remove</button>
             </div>
         </div>
     </form>
@@ -131,17 +132,20 @@
     newWordForm.onsubmit = async function (e) {
       e.preventDefault();
       const fragments = [];
-      new FormData(newWordForm).forEach((value, key) => {
+      const formData = new FormData(newWordForm);
+      formData.forEach((value, key) => {
         fragments.push(`${key}=${value}`);
       });
-      const result = await fetch('http://localhost:3000/word/add',
+      const url = +formData.get('id') > 0 ? 'http://localhost:3000/word/edit' : 'http://localhost:3000/word/add'
+      const method = +formData.get('id') > 0 ? 'put' : 'post'
+      const result = await fetch(url,
         {
-          method: 'post',
+          method,
           headers: {'Content-Type': 'application/x-www-form-urlencoded'},
           body: fragments.join('&')
         });
       showServerResponse(result);
-    }
+    };
 
     async function showServerResponse(res) {
       const body = await res.text();
@@ -154,8 +158,9 @@
     const getWordsForm = document.getElementById('get-words');
     const wordResults = document.getElementById('words-wrapper');
     const wordResult = document.getElementsByClassName('word-wrapper')[0];
+    let words = [];
 
-    getWordsForm.onsubmit = async function (e) {
+    getWordsForm.onsubmit = async function(e) {
       e.preventDefault();
       const fragments = [];
       new FormData(getWordsForm).forEach((value, key) => {
@@ -170,13 +175,25 @@
       showServerResponse(result);
     }
 
+    wordResults.onclick = async function(e) {
+      const target = e.target;
+      const action = target.getAttribute('data-action');
+      const id = target.parentNode.getAttribute('data-id');
+
+      if (action === 'edit') {
+        setEditData(id)
+      }
+    }
+
     async function showServerResponse(res) {
       const body = await res.json();
       wordResults.innerHTML = '';
+      words = body;
 
       const elements = body.map(word => {
         const wordWrapperEl = wordResult.cloneNode();
         wordWrapperEl.innerHTML = wordResult.innerHTML;
+        wordWrapperEl.setAttribute('data-id', word.id)
         const wordEl = wordWrapperEl.getElementsByClassName('word')[0];
         const formsEl = wordWrapperEl.getElementsByClassName('forms')[0];
         const translationsEl = wordWrapperEl.getElementsByClassName('translations')[0];
@@ -192,6 +209,30 @@
 
       document.getElementById('response-status').innerHTML = res.status;
       document.getElementById('response-body').innerHTML = JSON.stringify(body);
+    }
+    function setEditData(wordId) {
+      const word = words.find(w => w.id.toString() === wordId.toString());
+      const idEl = document.getElementById('id');
+      const wordEl = document.getElementById('word');
+      const originalLanguageEl = document.getElementById('original_language');
+      const translatedLanguageEl = document.getElementById('translated_language');
+      const translationsEl = document.getElementById('translations');
+      const speechPartEl = document.getElementById('speech_part');
+      const genderEl = document.getElementById('gender');
+      const formsEl = document.getElementById('forms');
+      const remarksEl = document.getElementById('remarks');
+      const stressLetterIndexEl = document.getElementById('stress_letter_index');
+
+      idEl.value = word.id;
+      wordEl.value = word.word;
+      originalLanguageEl.value = word.original_language_id;
+      translatedLanguageEl.value = word.translated_language_id;
+      translationsEl.value = word.translations.join(', ');
+      speechPartEl.value = word.speech_part_id;
+      genderEl.value = word.gender_id;
+      formsEl.value = word.forms;
+      remarksEl.value = word.remarks;
+      stressLetterIndexEl.value = word.stress_letter_index;
     }
   })()
 </script>
