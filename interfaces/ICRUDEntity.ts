@@ -4,4 +4,5 @@ export interface ICRUDEntity<Dto, Db> {
     loadFromDB(...args: any): Promise<void>;
     convertToDto(): Dto;
     save(): Promise<void>;
+    remove(): Promise<void>;
 }

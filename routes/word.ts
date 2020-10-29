@@ -80,3 +80,28 @@ wordRouter.put('/edit', async (req: Request, res: Response) => {
 
     res.sendStatus(200);
 });
+
+wordRouter.post('/remove', async (req: Request, res: Response) => {
+    if (!req.user) {
+        res.sendStatus(401);
+    }
+
+    if (!req.body.id) {
+        res.send(400);
+        throw new Error('ID_NOT_EXISTS');
+    }
+
+    const word = new Word();
+    await word.loadFromDB(req.body.id, {}, req.user)
+        .catch(error => {
+            res.send(500);
+            throw error;
+        });
+    await word.remove()
+        .catch(error => {
+            res.send(500);
+            throw error;
+        });
+
+    res.sendStatus(200);
+});

@@ -121,4 +121,14 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb>{
         this.stressLetterIndex = entity?.stress_letter_index;
         this.userCreated = user ? user : this.userCreated;
     }
+
+    async remove(): Promise<void> {
+        if(!this.dbid) {
+            throw new Error('NO_ID_PROVIDED');
+        }
+
+        const query = 'DELETE FROM tnw2.words WHERE id=$1';
+
+        return queryDatabase(query, [this.userCreated?.dbid]).then()
+    }
 }
