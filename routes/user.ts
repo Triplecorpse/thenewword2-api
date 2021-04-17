@@ -44,7 +44,7 @@ userRouter.post('/login', async (req: Request, res: Response) => {
             res.sendStatus(500);
         });
 
-    res.status(200).send(webtoken);
+    res.status(200).json({token: webtoken});
 });
 
 userRouter.post('/modify', async (req: Request, res: Response) => {
