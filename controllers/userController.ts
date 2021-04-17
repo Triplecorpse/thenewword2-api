@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import {ClassMiddleware, Controller, Get, Middleware, Post, Put} from '@overnightjs/core';
+import {ClassMiddleware, Controller, Get, Middleware, Options, Post, Put} from '@overnightjs/core';
 import {Logger} from '@overnightjs/logger';
 import {User} from "../models/user";
 import {IUser} from "../interfaces/IUser";
@@ -9,18 +9,22 @@ import {JwtManager} from "@overnightjs/jwt";
 import {validateRecaptcha} from "../services/recaptcha";
 import {hashPassword} from "../services/database-helpers";
 import {CORS} from "../services/CORS";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 @Controller('user')
 @ClassMiddleware(CORS)
 export class UserController {
   @Get('validate')
-  @Middleware(JwtManager.middleware)
+  // @Middleware(JwtManager.middleware)
   private validateUser(req: Request, res: Response) {
-    res.sendStatus(200)
-      // .header('Access-Control-Allow-Headers:Origin,X-Requested-With,Content-Type,Accept')
-      // .header('Access-Control-Allow-Methods: GET,POST,PUT,DELETE')
-      // .header('Access-Control-Allow-Origin: http://localhost:3000');
+    res.sendStatus(200);
   }
+
+  // @Options('validate')
+  // private validateUserO(req: Request, res: Response) {
+  //   res.sendStatus(200);
+  // }
 
   @Put()
   @Middleware(JwtManager.middleware)
