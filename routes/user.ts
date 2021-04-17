@@ -1,7 +1,5 @@
 import * as express from 'express';
 import {Request, Response} from "express";
-import * as bcrypt from "bcrypt";
-import * as util from 'util';
 import {queryDatabase} from "../services/db";
 import {IUserTokenPayload} from "../interfaces/IUserTokenPayload";
 import {jwtSign} from "../services/jwt";
@@ -9,7 +7,6 @@ import {IUserDto} from "../interfaces/dto/IUserDto";
 import {User} from "../models/User";
 
 export const userRouter = express.Router();
-const saltRounds = 10;
 
 userRouter.post('/register', async (req: Request, res: Response) => {
     const user = new User(req.body);
@@ -20,7 +17,7 @@ userRouter.post('/register', async (req: Request, res: Response) => {
             throw error;
         });
 
-    res.sendStatus(201);
+    res.status(201).json({});
 });
 
 userRouter.post('/login', async (req: Request, res: Response) => {

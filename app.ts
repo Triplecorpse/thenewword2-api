@@ -49,7 +49,7 @@ connectToDatabase()
         });
     });
 
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.json());
 app.use((req: Request, res: Response, next: NextFunction) => {
     if (process.env.MODE === 'DEVELOPMENT') {
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -61,7 +61,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 app.use(async (req: Request, res: Response, next: NextFunction) => {
-    req.user = await jwtVerify(req.body.token, req) as User;
+    if (req.headers.token) {
+        req.user = await jwtVerify(req.headers.token as string, req) as User;
+    }
     next();
 });
 app.use('/user', userRouter);

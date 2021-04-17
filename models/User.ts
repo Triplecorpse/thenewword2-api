@@ -2,9 +2,6 @@ import {IUserDto} from "../interfaces/dto/IUserDto";
 import {queryDatabase} from "../services/db";
 import * as util from "util";
 import * as bcrypt from "bcrypt";
-import {IUserTokenPayload} from "../interfaces/IUserTokenPayload";
-import {jwtSign} from "../services/jwt";
-import {Request} from "express";
 import {ICRUDEntity} from "../interfaces/ICRUDEntity";
 import {IUserDb} from "../interfaces/db/IUserDb";
 
@@ -55,7 +52,10 @@ export class User implements ICRUDEntity<IUserDto, IUserDb>{
             this.login,
             this.passwordHash,
             this.email
-        ]);
+        ])
+          .catch(error => {
+              throw error;
+          });
 
         this.dbid = user[0].id;
 

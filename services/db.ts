@@ -3,6 +3,7 @@ import * as util from "util";
 import * as fs from "fs";
 import * as dotenv from "dotenv";
 import {languages} from "countries-list";
+import sqlErrorCodes from "./sqlErrorCodes";
 
 dotenv.config();
 
@@ -33,8 +34,11 @@ export async function connectToDatabase() {
 export async function queryDatabase<T = any, K = any>(query: string, params?: K[]): Promise<T[]> {
     return pool.query(query, params)
         .catch(error => {
-            console.error(error);
-            throw new Error('DATABASE_QUERY_ERROR');
+            if (error.code) {
+                throw {code: error.code, routine: error.routine, desc: getErrorByCode(error.code)}
+            }
+
+            throw error;
         })
         .then(({rows}) => rows);
 }
@@ -53,4 +57,8 @@ function createQueryForLanguages(): string {
     });
 
     return `INSERT INTO tnw2.languages (code2, english_name, native_name) VALUES ${result};`;
+}
+
+function getErrorByCode(code: string): string {
+    return sqlErrorCodes[code] as string;
 }

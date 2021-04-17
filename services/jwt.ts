@@ -19,7 +19,6 @@ export function jwtVerify(token: string, req: Request): Promise<User | null> {
     }
 
     return new Promise<User | null>(async resolve => {
-        console.log('>'+token+'<');
         const verificationResult: IUserTokenPayload = await util.promisify(jwt.verify)(token, process.env.WEB_TOKEN as string) as IUserTokenPayload;
 
         if (verificationResult) {
