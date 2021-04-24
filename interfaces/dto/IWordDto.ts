@@ -10,11 +10,8 @@ export interface IWordDto {
     gender_name?: string;
     forms: string;
     original_language_id: number;
-    original_language_english_name?: string;
     translated_language_id: number;
-    translated_language_english_name?: string;
     remarks: string;
     stress_letter_index: number;
-    user_created_id?: number;
     user_created?: IUserDto;
 }

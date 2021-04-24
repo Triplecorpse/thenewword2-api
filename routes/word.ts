@@ -3,14 +3,13 @@ import {Request, Response} from "express";
 import {queryDatabase} from "../services/db";
 import {Word} from "../models/Word";
 import {genders, languages, speechParts} from "../const/constData";
-import {IWordDb} from "../interfaces/db/IWordDb";
 
 export const wordRouter = express.Router();
 
 wordRouter.get('/metadata', (req: Request, res: Response) => {
     res.json({
         speechParts: speechParts.map(sp => ({id: sp.dbid, title: sp.body})),
-        genders: genders.map(sp => ({id: sp.dbid, title: sp.body})),
+        genders: genders.map(g => ({id: g.dbid, title: g.body})),
         languages: languages.map(l => ({id: l.dbid, title: l.body.englishName}))
     });
 });
@@ -29,14 +28,14 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
 
     await word.save()
         .catch(error => {
-            console.error(error);
-            res.sendStatus(500);
+            res.status(500).json({error: 'CANNOT_SAVE_WORD'});
+            throw error;
         });
 
-    res.sendStatus(201);
+    res.status(201).json({success: true});
 });
 
-wordRouter.post('/get', async (req: Request, res: Response) => {
+wordRouter.get('/get', async (req: Request, res: Response) => {
     if (!req.user) {
         res.sendStatus(401);
     }
@@ -81,7 +80,7 @@ wordRouter.put('/edit', async (req: Request, res: Response) => {
     res.sendStatus(200);
 });
 
-wordRouter.post('/remove', async (req: Request, res: Response) => {
+wordRouter.delete('/remove', async (req: Request, res: Response) => {
     if (!req.user) {
         res.sendStatus(401);
     }

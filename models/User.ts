@@ -84,6 +84,5 @@ export class User implements ICRUDEntity<IUserDto, IUserDb>{
         const query = 'DELETE FROM tnw2.users WHERE id=$1';
 
         return queryDatabase(query, [this.dbid]).then();
-
     }
 }

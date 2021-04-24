@@ -9,7 +9,7 @@ import {IWordDb} from "../interfaces/db/IWordDb";
 import {IWordFilterData} from "../interfaces/IWordFilterData";
 import {genders, speechParts, languages} from "../const/constData";
 
-export class Word implements ICRUDEntity<IWordDto, IWordDb>{
+export class Word implements ICRUDEntity<IWordDto, IWordDb> {
     dbid?: number;
     word?: string;
     translations?: string;
@@ -48,9 +48,12 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb>{
             query = 'INSERT INTO tnw2.words (word, translations, speech_part_id, gender_id, forms, original_language_id, translated_language_id, remarks, user_created_id, stress_letter_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)';
         }
 
-        console.log(query, params);
-
-        return queryDatabase(query, params).then();
+        return queryDatabase(query, params).catch(
+            (error => {
+                console.log(error);
+                throw error.code;
+            })
+        ).then();
     }
 
     async loadFromDB(id: number, filterData?: IWordFilterData, user?: User): Promise<void> {
@@ -74,7 +77,7 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb>{
         }
     }
 
-    private createFilterDataSubquery(filterData?: IWordFilterData): {queryPart: string; params: any[]} {
+    private createFilterDataSubquery(filterData?: IWordFilterData): { queryPart: string; params: any[] } {
         if (!filterData) {
             return {queryPart: '', params: []};
         }
@@ -123,7 +126,7 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb>{
     }
 
     async remove(): Promise<void> {
-        if(!this.dbid) {
+        if (!this.dbid) {
             throw new Error('NO_ID_PROVIDED');
         }
 
