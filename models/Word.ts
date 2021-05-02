@@ -50,7 +50,7 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb> {
 
         return queryDatabase(query, params).catch(
             (error => {
-                console.log(error);
+                console.error(error);
                 throw error.code;
             })
         ).then();

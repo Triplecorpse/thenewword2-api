@@ -61,11 +61,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 app.use(async (req: Request, res: Response, next: NextFunction) => {
-    console.log(req.query.token);
     if (req.query.token) {
         req.user = await jwtVerify(req.query.token as string, req) as User;
-
-        console.log(req.user);
     }
     next();
 });
