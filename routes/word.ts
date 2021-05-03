@@ -20,7 +20,7 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
     }
 
     if (req.body.id) {
-        res.send(400);
+        res.status(400).json({type: 'ID_IN_EDIT'});
         throw new Error('ID_IN_EDIT');
     }
 
@@ -28,7 +28,12 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
 
     await word.save()
         .catch(error => {
-            res.status(500).json({error});
+            const err: any = {...error};
+            if (!error.type) {
+                err.desc = error.message;
+                err.type = 'GENERIC';
+            }
+            res.status(500).json({err});
             throw error;
         });
 
@@ -43,7 +48,12 @@ wordRouter.get('/get', async (req: Request, res: Response) => {
     const query = 'SELECT id FROM tnw2.words WHERE user_created_id = $1';
     const wordIds: { id: number }[] = await queryDatabase<{ id: number }>(query, [req.user?.dbid])
         .catch(error => {
-            res.status(500).json({error});
+            const err: any = {...error};
+            if (!error.type) {
+                err.desc = error.message;
+                err.type = 'GENERIC';
+            }
+            res.status(500).json({err});
             throw error;
         });
     const words = wordIds.map(() => new Word(undefined, req.user));
@@ -67,18 +77,27 @@ wordRouter.put('/edit', async (req: Request, res: Response) => {
     const word = new Word();
     await word.loadFromDB(req.body.id, {}, req.user)
         .catch(error => {
-            res.status(500).json({error});
+            const err: any = {...error};
+            if (!error.type) {
+                err.desc = error.message;
+                err.type = 'GENERIC';
+            }
+            res.status(500).json({err});
             throw error;
         });
     word.replaceWith(req.body);
     await word.save()
         .catch(error => {
-            console.log(error.message);
-            res.status(500).json({error});
+            const err: any = {...error};
+            if (!error.type) {
+                err.desc = error.message;
+                err.type = 'GENERIC';
+            }
+            res.status(500).json({err});
             throw error;
         });
 
-    res.sendStatus(200);
+    res.status(200).json({success: true});
 });
 
 wordRouter.delete('/remove', async (req: Request, res: Response) => {
@@ -94,12 +113,22 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
     const word = new Word();
     await word.loadFromDB(req.body.id, {}, req.user)
         .catch(error => {
-            res.send(500);
+            const err: any = {...error};
+            if (!error.type) {
+                err.desc = error.message;
+                err.type = 'GENERIC';
+            }
+            res.status(500).json({err});
             throw error;
         });
     await word.remove()
         .catch(error => {
-            res.status(500).json({error});
+            const err: any = {...error};
+            if (!error.type) {
+                err.desc = error.message;
+                err.type = 'GENERIC';
+            }
+            res.status(500).json({err});
             throw error;
         });
 

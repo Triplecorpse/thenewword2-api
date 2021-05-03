@@ -12,10 +12,10 @@ import {genders, speechParts, languages} from '../const/constData';
 export class Word implements ICRUDEntity<IWordDto, IWordDb> {
     dbid?: number;
     word?: string;
-    translations?: string;
+    translations?: string[];
     speechPart?: SpeechPart;
     gender?: Gender;
-    forms?: string;
+    forms?: string[];
     originalLanguage?: Language;
     translatedLanguage?: Language;
     remarks?: string;
@@ -29,16 +29,16 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb> {
     async save(): Promise<void> {
         let query;
         const params = [
-            this.word as string,
-            this.translations?.split(','),
+            this.word,
+            this.translations,
             this.speechPart?.dbid,
             this.gender?.dbid,
-            this.forms?.split(','),
+            this.forms,
             this.originalLanguage?.dbid,
             this.translatedLanguage?.dbid,
             this.remarks as string,
             this.userCreated?.dbid,
-            this.stressLetterIndex as number
+            this.stressLetterIndex
         ];
 
         if (this.dbid) {
