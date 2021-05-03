@@ -35,7 +35,12 @@ export async function queryDatabase<T = any, K = any>(query: string, params?: K[
     return pool.query(query, params)
         .catch(error => {
             if (error.code) {
-                throw {code: error.code, routine: error.routine, desc: getErrorByCode(error.code)}
+                throw {
+                    type: 'QUERY_ERROR',
+                    code: error.code,
+                    routine: error.routine,
+                    desc: getErrorByCode(error.code)
+                }
             }
 
             throw error;

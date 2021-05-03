@@ -28,7 +28,7 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
 
     await word.save()
         .catch(error => {
-            res.status(500).json({error: 'CANNOT_SAVE_WORD'});
+            res.status(500).json({error});
             throw error;
         });
 
@@ -43,7 +43,7 @@ wordRouter.get('/get', async (req: Request, res: Response) => {
     const query = 'SELECT id FROM tnw2.words WHERE user_created_id = $1';
     const wordIds: { id: number }[] = await queryDatabase<{ id: number }>(query, [req.user?.dbid])
         .catch(error => {
-            res.sendStatus(500);
+            res.status(500).json({error});
             throw error;
         });
     const words = wordIds.map(() => new Word(undefined, req.user));
@@ -60,20 +60,21 @@ wordRouter.put('/edit', async (req: Request, res: Response) => {
     }
 
     if (!req.body.id) {
-        res.send(400);
+        res.status(400).json({type: 'ID_REQUIRED'});
         throw new Error('ID_NOT_EXISTS');
     }
 
     const word = new Word();
     await word.loadFromDB(req.body.id, {}, req.user)
         .catch(error => {
-            res.send(500);
+            res.status(500).json({error});
             throw error;
         });
     word.replaceWith(req.body);
     await word.save()
         .catch(error => {
-            res.send(500);
+            console.log(error.message);
+            res.status(500).json({error});
             throw error;
         });
 
@@ -98,7 +99,7 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
         });
     await word.remove()
         .catch(error => {
-            res.send(500);
+            res.status(500).json({error});
             throw error;
         });
 

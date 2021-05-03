@@ -1,13 +1,13 @@
-import {IUserDto} from "../interfaces/dto/IUserDto";
-import {queryDatabase} from "../services/db";
-import * as util from "util";
-import * as bcrypt from "bcrypt";
-import {ICRUDEntity} from "../interfaces/ICRUDEntity";
-import {IUserDb} from "../interfaces/db/IUserDb";
+import {IUserDto} from '../interfaces/dto/IUserDto';
+import {queryDatabase} from '../services/db';
+import * as util from 'util';
+import * as bcrypt from 'bcrypt';
+import {ICRUDEntity} from '../interfaces/ICRUDEntity';
+import {IUserDb} from '../interfaces/db/IUserDb';
 
 const saltRounds = 10;
 
-export class User implements ICRUDEntity<IUserDto, IUserDb>{
+export class User implements ICRUDEntity<IUserDto, IUserDb> {
     dbid?: number;
     login: string = '';
     password?: string = '';
@@ -20,7 +20,11 @@ export class User implements ICRUDEntity<IUserDto, IUserDb>{
 
     async loadFromDB(loginOrEmail: string, password: string): Promise<void> {
         const query = 'SELECT DISTINCT ON(login) id, login, email, password FROM tnw2.users WHERE login = $1 OR email = $1';
-        const dbResult = await queryDatabase(query, [loginOrEmail]);
+        const dbResult = await queryDatabase(query, [loginOrEmail])
+            .catch(error => {
+                console.error(error);
+                throw error;
+            });
 
         if (!dbResult.length) {
             throw new Error('USER_NOT_FOUND');
@@ -53,9 +57,10 @@ export class User implements ICRUDEntity<IUserDto, IUserDb>{
             this.passwordHash,
             this.email
         ])
-          .catch(error => {
-              throw error;
-          });
+            .catch(error => {
+                console.error(error);
+                throw error;
+            });
 
         this.dbid = user[0].id;
 
@@ -63,11 +68,11 @@ export class User implements ICRUDEntity<IUserDto, IUserDb>{
     }
 
     convertToDto(): IUserDto {
-        return <IUserDto>{
+        return {
             password: this.password,
             email: this.email,
             login: this.login
-        };
+        } as IUserDto;
     }
 
     replaceWith(entity?: IUserDto): void {
@@ -83,6 +88,11 @@ export class User implements ICRUDEntity<IUserDto, IUserDb>{
 
         const query = 'DELETE FROM tnw2.users WHERE id=$1';
 
-        return queryDatabase(query, [this.dbid]).then();
+        return queryDatabase(query, [this.dbid])
+            .catch(error => {
+                console.error(error);
+                throw error;
+            })
+            .then();
     }
 }

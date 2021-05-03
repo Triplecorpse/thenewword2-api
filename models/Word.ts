@@ -1,13 +1,13 @@
-import {IWordDto} from "../interfaces/dto/IWordDto";
-import {queryDatabase} from "../services/db";
-import {User} from "./User";
-import {SpeechPart} from "./SpeechPart";
-import {Gender} from "./Gender";
-import {Language} from "./Language";
-import {ICRUDEntity} from "../interfaces/ICRUDEntity";
-import {IWordDb} from "../interfaces/db/IWordDb";
-import {IWordFilterData} from "../interfaces/IWordFilterData";
-import {genders, speechParts, languages} from "../const/constData";
+import {IWordDto} from '../interfaces/dto/IWordDto';
+import {queryDatabase} from '../services/db';
+import {User} from './User';
+import {SpeechPart} from './SpeechPart';
+import {Gender} from './Gender';
+import {Language} from './Language';
+import {ICRUDEntity} from '../interfaces/ICRUDEntity';
+import {IWordDb} from '../interfaces/db/IWordDb';
+import {IWordFilterData} from '../interfaces/IWordFilterData';
+import {genders, speechParts, languages} from '../const/constData';
 
 export class Word implements ICRUDEntity<IWordDto, IWordDb> {
     dbid?: number;
@@ -48,18 +48,24 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb> {
             query = 'INSERT INTO tnw2.words (word, translations, speech_part_id, gender_id, forms, original_language_id, translated_language_id, remarks, user_created_id, stress_letter_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)';
         }
 
-        return queryDatabase(query, params).catch(
-            (error => {
-                console.error(error);
-                throw error.code;
-            })
-        ).then();
+        return queryDatabase(query, params)
+            .catch(
+                (error => {
+                    console.error(error);
+                    throw error;
+                })
+            )
+            .then();
     }
 
     async loadFromDB(id: number, filterData?: IWordFilterData, user?: User): Promise<void> {
         const queryPart = this.createFilterDataSubquery(filterData);
         const query = 'SELECT tnw2.words.id, word, translations, forms, remarks, stress_letter_index, tnw2.speech_parts.title AS speech_part, tnw2.genders.title AS gender, ol.english_name AS original_language, tl.english_name AS translated_language FROM tnw2.words LEFT JOIN tnw2.speech_parts ON tnw2.words.speech_part_id=tnw2.speech_parts.id LEFT JOIN tnw2.genders ON tnw2.words.gender_id=tnw2.genders.id LEFT JOIN tnw2.languages AS ol ON tnw2.words.original_language_id=ol.id LEFT JOIN tnw2.languages AS tl ON tnw2.words.translated_language_id=tl.id WHERE tnw2.words.id = $1' + queryPart.queryPart;
-        const dbResult = await queryDatabase(query, [id, ...queryPart.params]);
+        const dbResult = await queryDatabase(query, [id, ...queryPart.params])
+            .catch(error => {
+                console.error(error);
+                throw error;
+            });
 
         if (dbResult?.length) {
             const loadedWord = dbResult[0];
@@ -92,7 +98,7 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb> {
     }
 
     convertToDto(): IWordDto {
-        return <IWordDto>{
+        return {
             user_created_id: this.userCreated?.dbid,
             user_created: this.userCreated?.convertToDto(),
             stress_letter_index: this.stressLetterIndex,
@@ -109,7 +115,7 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb> {
             translated_language_english_name: this.translatedLanguage?.body.englishName,
             speech_part_id: this.speechPart?.dbid,
             speech_part_name: this.speechPart?.body
-        };
+        } as IWordDto;
     }
 
     replaceWith(entity?: IWordDto, user?: User): void {
@@ -132,6 +138,11 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb> {
 
         const query = 'DELETE FROM tnw2.words WHERE id=$1';
 
-        return queryDatabase(query, [this.dbid]).then();
+        return queryDatabase(query, [this.dbid])
+            .catch(error => {
+                console.error(error);
+                throw error;
+            })
+            .then();
     }
 }

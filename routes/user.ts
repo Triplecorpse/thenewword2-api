@@ -1,10 +1,10 @@
 import * as express from 'express';
-import {Request, Response} from "express";
-import {queryDatabase} from "../services/db";
-import {IUserTokenPayload} from "../interfaces/IUserTokenPayload";
-import {jwtSign} from "../services/jwt";
-import {IUserDto} from "../interfaces/dto/IUserDto";
-import {User} from "../models/User";
+import {Request, Response} from 'express';
+import {queryDatabase} from '../services/db';
+import {IUserTokenPayload} from '../interfaces/IUserTokenPayload';
+import {jwtSign} from '../services/jwt';
+import {IUserDto} from '../interfaces/dto/IUserDto';
+import {User} from '../models/User';
 
 export const userRouter = express.Router();
 
