@@ -1,9 +1,9 @@
-import {Pool} from "pg";
-import * as util from "util";
-import * as fs from "fs";
-import * as dotenv from "dotenv";
-import {languages} from "countries-list";
-import sqlErrorCodes from "./sqlErrorCodes";
+import {Pool} from 'pg';
+import * as util from 'util';
+import * as fs from 'fs';
+import * as dotenv from 'dotenv';
+import {languages} from 'countries-list';
+import sqlErrorCodes from './sqlErrorCodes';
 
 dotenv.config();
 
@@ -54,7 +54,7 @@ function createQueryForLanguages(): string {
     Object.keys(languages).forEach((code2, index) => {
         const languageObj: any = (languages as any)[code2];
 
-        result += `('${code2}', '${languageObj.name.replace("'", "''")}', '${languageObj.native.replace("'", "''")}')`;
+        result += `('${code2}', '${languageObj.name.replace('\'', '\'\'')}', '${languageObj.native.replace('\'', '\'\'')}')`;
 
         if (index < Object.keys(languages).length - 1) {
             result += ',';

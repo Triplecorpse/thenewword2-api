@@ -1,8 +1,9 @@
-import * as express from "express";
-import {Request, Response} from "express";
-import {queryDatabase} from "../services/db";
-import {Word} from "../models/Word";
-import {genders, languages, speechParts} from "../const/constData";
+import * as express from 'express';
+import {Request, Response} from 'express';
+import {queryDatabase} from '../services/db';
+import {Word} from '../models/Word';
+import {genders, languages, speechParts} from '../const/constData';
+import {jwtSign} from '../services/jwt';
 
 export const wordRouter = express.Router();
 
@@ -105,8 +106,8 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
         res.sendStatus(401);
     }
 
-    if (!req.body.id) {
-        res.send(400);
+    if (!req.query.id) {
+        res.status(400).json({type: 'ID_NOT_EXISTS'});
         throw new Error('ID_NOT_EXISTS');
     }
 
@@ -133,4 +134,10 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
         });
 
     res.sendStatus(200);
+});
+
+wordRouter.get('/exercise-words', async (req: Request, res: Response) => {
+    if (!req.query.id) {
+        res.status(400).json({type: 'ID_REQUIRED'});
+    }
 });

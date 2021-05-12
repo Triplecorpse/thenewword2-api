@@ -1,11 +1,9 @@
-import * as dotenv from "dotenv";
+import * as dotenv from 'dotenv';
 import * as util from 'util';
 import * as jwt from 'jsonwebtoken'
-import {Request} from "express";
-import {IUserTokenPayload} from "../interfaces/IUserTokenPayload";
-import {queryDatabase} from "./db";
-import * as bcrypt from "bcrypt";
-import {User} from "../models/User";
+import {Request} from 'express';
+import {IUserTokenPayload} from '../interfaces/IUserTokenPayload';
+import {User} from '../models/User';
 
 dotenv.config();
 

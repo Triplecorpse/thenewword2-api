@@ -1,4 +1,4 @@
-import {countries, Country, Language, languagesAll} from "countries-list";
+import {countries, Country, Language, languagesAll} from 'countries-list';
 
 interface INativeCountry extends Country {
   code: string;
@@ -24,7 +24,7 @@ export interface ILanguage {
 
 export function getLanguages(): ILanguage[] {
   // @ts-ignore
-  const languagesArray: INativeLanguage[] = Object.keys(languagesAll).map((code: string) => ({...languagesAll[code], code: code}))
+  const languagesArray: INativeLanguage[] = Object.keys(languagesAll).map((code: string) => ({...languagesAll[code], code}))
   // @ts-ignore
   const countriesArray: INativeCountry[] = Object.keys(countries).map((code: string) => ({...countries[code], code: code.toLowerCase()}))
 

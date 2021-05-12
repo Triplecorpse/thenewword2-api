@@ -2,7 +2,8 @@ CREATE TABLE IF NOT EXISTS tnw2.users (
     id serial PRIMARY KEY,
     login text NOT NULL UNIQUE CHECK(login != ''),
     password text NOT NULL,
-    email text NOT NULL UNIQUE CHECK(email != '')
+    email text NOT NULL UNIQUE CHECK(email != ''),
+    native_language integer REFERENCES tnw2.languages(id) NOT NULL
 );
 CREATE TABLE IF NOT EXISTS tnw2.words (
     id serial PRIMARY KEY,

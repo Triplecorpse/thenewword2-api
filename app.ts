@@ -1,19 +1,20 @@
 import * as express from 'express';
 import * as dotenv from 'dotenv';
-import {userRouter} from "./routes/user";
-import * as bodyParser from "body-parser";
-import {NextFunction, Request, Response} from "express";
-import {connectToDatabase, queryDatabase} from "./services/db";
-import {jwtVerify} from "./services/jwt";
-import {wordRouter} from "./routes/word";
-import {User} from "./models/User";
-import {ILanguageDb} from "./interfaces/db/ILanguageDb";
-import {ISpeechPartDb} from "./interfaces/db/ISpeechPartDb";
-import {IGenderDb} from "./interfaces/db/IGenderDb";
-import {genders, languages, speechParts} from "./const/constData";
-import {Gender} from "./models/Gender";
-import {SpeechPart} from "./models/SpeechPart";
-import {Language} from "./models/Language";
+import {userRouter} from './routes/user';
+import * as bodyParser from 'body-parser';
+import {NextFunction, Request, Response} from 'express';
+import {connectToDatabase, queryDatabase} from './services/db';
+import {jwtVerify} from './services/jwt';
+import {wordRouter} from './routes/word';
+import {User} from './models/User';
+import {ILanguageDb} from './interfaces/db/ILanguageDb';
+import {ISpeechPartDb} from './interfaces/db/ISpeechPartDb';
+import {IGenderDb} from './interfaces/db/IGenderDb';
+import {genders, languages, speechParts} from './const/constData';
+import {Gender} from './models/Gender';
+import {SpeechPart} from './models/SpeechPart';
+import {Language} from './models/Language';
+import {wordsetRouter} from "./routes/wordset";
 
 dotenv.config();
 
@@ -68,3 +69,4 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
 });
 app.use('/user', userRouter);
 app.use('/word', wordRouter);
+app.use('/wordset', wordsetRouter);
