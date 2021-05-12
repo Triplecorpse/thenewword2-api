@@ -2,7 +2,7 @@ import {IUserDto} from './IUserDto';
 
 export interface IWordDto {
     id?: number;
-    word: string;
+    word?: string;
     translations: string[];
     speech_part_id: number;
     speech_part_name?: string;

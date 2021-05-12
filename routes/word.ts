@@ -3,7 +3,9 @@ import {Request, Response} from 'express';
 import {queryDatabase} from '../services/db';
 import {Word} from '../models/Word';
 import {genders, languages, speechParts} from '../const/constData';
-import {jwtSign} from '../services/jwt';
+import {User} from "../models/User";
+import {jwtDecode, jwtSign} from "../services/jwt";
+import {IWordDto} from "../interfaces/dto/IWordDto";
 
 export const wordRouter = express.Router();
 
@@ -136,8 +138,78 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
     res.sendStatus(200);
 });
 
-wordRouter.get('/exercise-words', async (req: Request, res: Response) => {
-    if (!req.query.id) {
-        res.status(400).json({type: 'ID_REQUIRED'});
+wordRouter.get('/exercise', async (req: Request, res: Response) => {
+    if (!req.user) {
+        res.sendStatus(401);
     }
+
+    const query = 'SELECT id FROM tnw2.words WHERE user_created_id = $1 ORDER BY random() LIMIT 1';
+    const words = await getWordsByQuery(query, [req.user?.dbid], req.user as User)
+        .catch(error => {
+            const err: any = {...error};
+            if (!error.type) {
+                err.desc = error.message;
+                err.type = 'GENERIC';
+            }
+            res.status(500).json({err});
+            throw error;
+        });
+    const wordsDto = words.map(word => word.convertToDto());
+    const encoded = await jwtSign(JSON.stringify(wordsDto))
+        .catch(error => {
+            const err: any = {...error};
+            if (!error.type) {
+                err.desc = error.message;
+                err.type = 'JWT_ERROR';
+            }
+            res.status(500).json({err});
+            throw error;
+        });
+    const wordsToSend = wordsDto
+        .map(word => {
+            delete word?.word;
+
+            return word;
+        });
+
+    res.json({words: wordsToSend, encoded});
 });
+
+wordRouter.post('/exercise', async (req: Request, res: Response) => {
+    if (!req.user) {
+        res.sendStatus(401);
+    }
+
+    if (!req.body.encoded) {
+        res.status(400).json({type: 'ENCODED_REQUIRED'});
+    }
+
+    const decoded: IWordDto[] = JSON.parse(await jwtDecode(req.body.encoded)
+        .catch(error => {
+            const err: any = {...error};
+            if (!error.type) {
+                err.desc = error.message;
+                err.type = 'JWT_ERROR';
+            }
+            res.status(500).json({err});
+            throw error;
+        }));
+
+    const wordFromUser: IWordDto = req.body.word;
+    const wordFromVault: IWordDto = decoded.find(word => word.id === wordFromUser.id) as IWordDto;
+    const isRight = JSON.stringify(wordFromUser) === JSON.stringify(wordFromVault);
+
+    res.json({you: wordFromUser, vault: wordFromVault, right: isRight});
+});
+
+async function getWordsByQuery(query: string, params: any[], user: User): Promise<Word[]> {
+    const wordIds: { id: number }[] = await queryDatabase<{ id: number }>(query, params)
+        .catch(error => Promise.reject(error));
+
+    const words = wordIds.map(() => new Word(undefined, user));
+    const words$ = wordIds.map(({id}, index) => words[index].loadFromDB(id));
+
+    await Promise.all(words$);
+
+    return words;
+}

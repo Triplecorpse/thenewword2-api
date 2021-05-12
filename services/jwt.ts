@@ -38,3 +38,11 @@ export function jwtVerify(token: string, req: Request): Promise<User | null> {
         }
     });
 }
+
+export async function jwtDecode(token: string): Promise<string> {
+    if (!token) {
+        return Promise.reject();
+    }
+
+    return await util.promisify(jwt.verify)(token, process.env.WEB_TOKEN as string) as string;
+}
