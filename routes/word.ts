@@ -143,7 +143,7 @@ wordRouter.get('/exercise', async (req: Request, res: Response) => {
         res.sendStatus(401);
     }
 
-    const query = 'SELECT id FROM tnw2.words WHERE user_created_id = $1 ORDER BY random() LIMIT 1';
+    const query = 'SELECT id FROM tnw2.words WHERE user_created_id = $1 ORDER BY random() LIMIT 10';
     const words = await getWordsByQuery(query, [req.user?.dbid], req.user as User)
         .catch(error => {
             const err: any = {...error};
@@ -184,7 +184,7 @@ wordRouter.post('/exercise', async (req: Request, res: Response) => {
         res.status(400).json({type: 'ENCODED_REQUIRED'});
     }
 
-    const decoded: IWordDto[] = JSON.parse(await jwtDecode(req.body.encoded)
+    const decoded: IWordDto[] = await jwtDecode(req.body.encoded)
         .catch(error => {
             const err: any = {...error};
             if (!error.type) {
@@ -193,11 +193,11 @@ wordRouter.post('/exercise', async (req: Request, res: Response) => {
             }
             res.status(500).json({err});
             throw error;
-        }));
+        });
 
     const wordFromUser: IWordDto = req.body.word;
     const wordFromVault: IWordDto = decoded.find(word => word.id === wordFromUser.id) as IWordDto;
-    const isRight = JSON.stringify(wordFromUser) === JSON.stringify(wordFromVault);
+    const isRight = wordsEqual(wordFromUser, wordFromVault);
 
     res.json({you: wordFromUser, vault: wordFromVault, right: isRight});
 });
@@ -212,4 +212,8 @@ async function getWordsByQuery(query: string, params: any[], user: User): Promis
     await Promise.all(words$);
 
     return words;
+}
+
+function wordsEqual(word1: IWordDto, word2: IWordDto): boolean {
+    return word1.word === word2.word;
 }

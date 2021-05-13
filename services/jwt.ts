@@ -39,10 +39,10 @@ export function jwtVerify(token: string, req: Request): Promise<User | null> {
     });
 }
 
-export async function jwtDecode(token: string): Promise<string> {
+export async function jwtDecode<T = any>(token: string): Promise<T> {
     if (!token) {
         return Promise.reject();
     }
 
-    return await util.promisify(jwt.verify)(token, process.env.WEB_TOKEN as string) as string;
+    return await util.promisify(jwt.verify)(token, process.env.WEB_TOKEN as string) as any;
 }
