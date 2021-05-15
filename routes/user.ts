@@ -27,6 +27,7 @@ userRouter.post('/login', async (req: Request, res: Response) => {
         .catch(error => {
             console.error(error);
             res.sendStatus(401);
+            throw error;
         });
 
     delete user.passwordHash;
@@ -41,10 +42,16 @@ userRouter.post('/login', async (req: Request, res: Response) => {
     const webtoken = await jwtSign(payload)
         .catch(error => {
             console.error(error);
-            res.sendStatus(500);
+            res.status(500).json(error);
+            throw error;
         });
 
-    res.status(200).json({token: webtoken, login: user.login});
+    res.status(200).json({
+        token: webtoken,
+        login: user.login,
+        native_language: user.nativeLanguage?.dbid,
+        learning_languages: user.learningLanguages.map(lang => lang.dbid)
+    });
 });
 
 userRouter.post('/modify', async (req: Request, res: Response) => {

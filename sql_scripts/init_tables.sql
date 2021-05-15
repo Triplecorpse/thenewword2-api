@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS tnw2.relation_users_word_sets (
     user_id integer NOT NULL REFERENCES tnw2.users(id),
     word_set_id integer NOT NULL REFERENCES tnw2.word_sets(id)
 );
+CREATE TABLE IF NOT EXISTS tnw2.relation_users_learning_language (
+    user_id integer NOT NULL REFERENCES tnw2.users(id),
+    language_id integer NOT NULL REFERENCES tnw2.languages(id)
+);
 
 CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
     id serial PRIMARY KEY,
