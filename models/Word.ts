@@ -121,8 +121,8 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb> {
     replaceWith(entity?: IWordDto, user?: User): void {
         this.word = entity?.word;
         this.translations = entity?.translations;
-        this.speechPart = speechParts.find(({dbid}) => entity?.speech_part_id.toString() === dbid.toString());
-        this.gender = genders.find(({dbid}) => entity?.gender_id.toString() === dbid.toString());
+        this.speechPart = speechParts.find(({dbid}) => entity?.speech_part_id?.toString() === dbid.toString());
+        this.gender = genders.find(({dbid}) => entity?.gender_id?.toString() === dbid.toString());
         this.forms = entity?.forms;
         this.originalLanguage = languages.find(({dbid}) => entity?.original_language_id.toString() === dbid.toString());
         this.translatedLanguage = languages.find(({dbid}) => entity?.translated_language_id.toString() === dbid.toString());

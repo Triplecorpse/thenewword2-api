@@ -114,7 +114,8 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
     }
 
     const word = new Word();
-    await word.loadFromDB(req.body.id, {}, req.user)
+
+    await word.loadFromDB(+req.query.id, {}, req.user)
         .catch(error => {
             const err: any = {...error};
             if (!error.type) {
@@ -135,7 +136,7 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
             throw error;
         });
 
-    res.sendStatus(200);
+    res.status(200).json({success: true});
 });
 
 wordRouter.get('/exercise', async (req: Request, res: Response) => {
