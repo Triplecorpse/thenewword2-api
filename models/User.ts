@@ -41,8 +41,9 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
                 throw {type: 'PASSWORD_CHECK_FAILED'};
             });
         const learningLanguages = dbResult.map(result => result.learning_languages_ids);
+        const isRestoringPassword = password === 'restore' && user.password === 'to_restore';
 
-        if (compareResult) {
+        if (compareResult || isRestoringPassword) {
             this.login = user.login;
             this.email = user.email;
             this.passwordHash = user.password;
@@ -63,9 +64,10 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
         }
 
         if (this.dbid) {
-            await queryDatabase('UPDATE tnw2.users SET (password, email) = ($1, $2) RETURNING *', [
+            await queryDatabase('UPDATE tnw2.users SET (password, email) = ($1, $2) WHERE id = $3 RETURNING *', [
                 this.passwordHash,
-                this.email
+                this.email,
+                this.dbid
             ])
                 .catch(error => {
                     console.error(error);
