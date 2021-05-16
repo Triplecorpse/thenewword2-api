@@ -52,14 +52,30 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
 
             return;
         } else {
+            // return Promise.reject({type: 'PASSWORD_MISMATCH'})
             throw {type: 'PASSWORD_MISMATCH'};
         }
     }
 
     async save(): Promise<void> {
-        this.passwordHash = await util.promisify(bcrypt.hash)(this.password, saltRounds) as string;
+        if (this.password) {
+            this.passwordHash = await util.promisify(bcrypt.hash)(this.password, saltRounds) as string;
+        }
 
-        if (!this.dbid) {
+        if (this.dbid) {
+            await queryDatabase('UPDATE tnw2.users SET (password, email) = ($1, $2) RETURNING *', [
+                this.passwordHash,
+                this.email
+            ])
+                .catch(error => {
+                    console.error(error);
+                    throw error;
+                });
+
+            await queryDatabase('DELETE FROM tnw2.relation_users_learning_language WHERE user_id = $1', [
+                this.dbid
+            ]);
+        } else {
             const user = await queryDatabase('INSERT INTO tnw2.users (login, password, email, native_language) VALUES($1, $2, $3, $4) RETURNING *', [
                 this.login,
                 this.passwordHash,
@@ -71,21 +87,18 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
                     throw error;
                 });
 
-            if (this.learningLanguages.length) {
-                const queryPart =
-                    this.learningLanguages.map((lang, index) => `($1, $${index + 2})`).join(', ');
-
-                const userLearningLanguageRel =
-                    await queryDatabase(`INSERT INTO tnw2.relation_users_learning_language (user_id, language_id) VALUES ${queryPart} RETURNING *`, [
-                        user[0].id,
-                        ...this.learningLanguages.map(lang => lang.dbid)
-                    ]);
-            }
-
-
             this.dbid = user[0].id;
         }
 
+        if (this.learningLanguages.length) {
+            const queryPart =
+                this.learningLanguages.map((lang, index) => `($1, $${index + 2})`).join(', ');
+
+            await queryDatabase(`INSERT INTO tnw2.relation_users_learning_language (user_id, language_id) VALUES ${queryPart} RETURNING *`, [
+                this.dbid,
+                ...this.learningLanguages.map(lang => lang.dbid)
+            ]);
+        }
 
         return;
     }

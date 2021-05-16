@@ -17,7 +17,8 @@ export function jwtVerify(token: string, req: Request): Promise<User | null> {
     }
 
     return new Promise<User | null>(async resolve => {
-        const verificationResult: IUserTokenPayload = await util.promisify(jwt.verify)(token, process.env.WEB_TOKEN as string) as IUserTokenPayload;
+        const verificationResult: IUserTokenPayload =
+            await util.promisify(jwt.verify)(token, process.env.WEB_TOKEN as string) as IUserTokenPayload;
 
         if (verificationResult) {
             const tokenMatchesUserParams =
@@ -28,6 +29,8 @@ export function jwtVerify(token: string, req: Request): Promise<User | null> {
             if (tokenMatchesUserParams) {
                 const user = new User();
                 await user.loadFromDB(verificationResult.login, verificationResult.password);
+
+                user.password = verificationResult.password;
 
                 resolve(user);
             } else {
