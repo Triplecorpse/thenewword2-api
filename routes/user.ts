@@ -5,10 +5,16 @@ import {IUserTokenPayload} from '../interfaces/IUserTokenPayload';
 import {jwtSign} from '../services/jwt';
 import {IUserDto} from '../interfaces/dto/IUserDto';
 import {User} from '../models/User';
+import {validateRecaptcha} from "../services/recaptcha";
 
 export const userRouter = express.Router();
 
 userRouter.post('/register', async (req: Request, res: Response) => {
+    await validateRecaptcha(req.body.token)
+        .catch(() => {
+            res.status(400).json({type: 'RECAPTCHA_ERROR'});
+        });
+
     const user = new User(req.body);
 
     await user.save()
@@ -21,6 +27,11 @@ userRouter.post('/register', async (req: Request, res: Response) => {
 });
 
 userRouter.post('/login', async (req: Request, res: Response) => {
+    await validateRecaptcha(req.body.token)
+        .catch(() => {
+            res.status(400).json({type: 'RECAPTCHA_ERROR'});
+        });
+
     const user = new User();
 
     await user.loadFromDB(req.body.login, req.body.password)
