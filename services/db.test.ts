@@ -2,7 +2,6 @@ import * as pg from 'pg';
 import {connectToDatabase} from './db';
 import * as util from 'util';
 import * as fs from 'fs';
-import {query} from "express";
 
 jest.mock('pg');
 
@@ -21,32 +20,50 @@ describe('Db module', () => {
             expect(spy).toBeCalledWith(initQuery);
         });
 
-        it('should fill speech parts and genders if speech_parts table is empty', async () => {
-            const spy = jest.spyOn(pg.Pool.prototype, 'query').mockImplementation(() => Promise.resolve({rows: []}));
-            const initStatic = await util.promisify(fs.readFile)('sql_scripts/init_static.sql', 'UTF8');
-            await connectToDatabase();
-            expect(spy).toBeCalledWith(initStatic);
+        describe('speech_parts table is empty', () => {
+            let spy = jest.spyOn(pg.Pool.prototype, 'query');
+
+            beforeEach(() => {
+                spy.mockClear();
+                spy = spy.mockImplementation(() => Promise.resolve({rows: []}));
+            });
+
+            afterEach(() => {
+                jest.clearAllMocks();
+            })
+
+            it('should fill speech parts and genders tables', async () => {
+                const initStatic = await util.promisify(fs.readFile)('sql_scripts/init_static.sql', 'UTF8');
+                await connectToDatabase();
+                expect(spy).toBeCalledWith(initStatic);
+            });
+
+            it('should fill languages table', async () => {
+                const spy = jest.spyOn(pg.Pool.prototype, 'query')
+                    .mockImplementation(() => Promise.resolve({rows: []}));
+                await connectToDatabase();
+                expect(spy).toBeCalledWith(expect.stringContaining('INSERT INTO tnw2.languages'));
+            });
         });
 
-        it('should not fill speech parts and genders if speech_parts table is not empty', async () => {
-            const spy = jest.spyOn(pg.Pool.prototype, 'query')
-                .mockImplementation(() => Promise.resolve({rows: [{exists: true}]}));
-            const initStatic = await util.promisify(fs.readFile)('sql_scripts/init_static.sql', 'UTF8');
-            await connectToDatabase();
-            expect(spy).not.toBeCalledWith(initStatic);
-        });
+        describe('speech_parts table is NOT empty', () => {
+            let spy = jest.spyOn(pg.Pool.prototype, 'query');
 
-        it('should fill languages if speech_parts table is empty', async () => {
-            const spy = jest.spyOn(pg.Pool.prototype, 'query').mockImplementation(() => Promise.resolve({rows: []}));
-            await connectToDatabase();
-            expect(spy).toBeCalledWith(expect.stringContaining('INSERT INTO tnw2.languages'));
-        });
+            beforeEach(() => {
+                spy.mockClear();
+                spy = spy.mockImplementation(() => Promise.resolve({rows: [{exists: true}]}));
+            });
 
-        it('should not fill languages if speech_parts table is not empty', async () => {
-            const spy = jest.spyOn(pg.Pool.prototype, 'query')
-                .mockImplementation(() => Promise.resolve({rows: [{exists: true}]}));
-            await connectToDatabase();
-            expect(spy).not.toBeCalledWith(expect.stringContaining('INSERT INTO tnw2.languages'));
+            it('should NOT fill speech parts and genders tables', async () => {
+                const initStatic = await util.promisify(fs.readFile)('sql_scripts/init_static.sql', 'UTF8');
+                await connectToDatabase();
+                expect(spy).not.toBeCalledWith(initStatic);
+            });
+
+            it('should NOT fill languages table', async () => {
+                await connectToDatabase();
+                expect(spy).not.toBeCalledWith(expect.stringContaining('INSERT INTO tnw2.languages'));
+            });
         });
     });
 });
