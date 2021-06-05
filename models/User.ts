@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import {ICRUDEntity} from '../interfaces/ICRUDEntity';
 import {IUserDb} from '../interfaces/db/IUserDb';
 import {Language} from './Language';
-import {languages} from "../const/constData";
+import {languages} from '../const/constData';
 
 const saltRounds = 10;
 
@@ -26,7 +26,6 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
         const query = 'SELECT tnw2.users.id, tnw2.users.login, tnw2.users.email, tnw2.users.password, tnw2.users.native_language, tnw2.relation_users_learning_language.language_id AS learning_languages_ids FROM tnw2.users LEFT JOIN tnw2.relation_users_learning_language ON tnw2.relation_users_learning_language.user_id = tnw2.users.id WHERE login = $1;';
         const dbResult = await queryDatabase(query, [loginOrEmail])
             .catch(error => {
-                console.error(error);
                 throw error;
             });
 
@@ -34,27 +33,22 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
             throw {type: 'USER_NOT_FOUND'};
         }
 
-        const user = dbResult[0];
-        const compareResult = await util.promisify(bcrypt.compare)(password, user.password)
-            .catch(error => {
-                console.error(error);
-                throw {type: 'PASSWORD_CHECK_FAILED'};
-            });
-        const learningLanguages = dbResult.map(result => result.learning_languages_ids);
-        const isRestoringPassword = password === 'restore' && user.password === 'to_restore';
 
-        if (compareResult || isRestoringPassword) {
+        const user = dbResult[0];
+        const compareResult = await util.promisify(bcrypt.compare)(password, user.password);
+        const isRestoringPassword = password === 'restore' && user.password === 'to_restore';
+        const learningLanguages = dbResult.map(result => result.learning_languages_ids);
+        console.log(user, compareResult, isRestoringPassword);
+
+        if (!compareResult && !isRestoringPassword) {
+            throw {type: 'PASSWORD_CHECK_FAILED'};
+        } else {
             this.login = user.login;
             this.email = user.email;
             this.passwordHash = user.password;
             this.dbid = user.id;
             this.nativeLanguage = languages.find(lang => lang.dbid === user.native_language)
             this.learningLanguages = languages.filter(lang => learningLanguages.includes(lang.dbid))
-
-            return;
-        } else {
-            // return Promise.reject({type: 'PASSWORD_MISMATCH'})
-            throw {type: 'PASSWORD_MISMATCH'};
         }
     }
 
