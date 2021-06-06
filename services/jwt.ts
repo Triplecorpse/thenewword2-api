@@ -4,6 +4,7 @@ import * as jwt from 'jsonwebtoken'
 import {Request} from 'express';
 import {IUserTokenPayload} from '../interfaces/IUserTokenPayload';
 import {User} from '../models/User';
+import {Secret} from "jsonwebtoken";
 
 dotenv.config();
 
@@ -36,8 +37,6 @@ export function jwtVerify(token: string, req: Request): Promise<User | null> {
             } else {
                 resolve(null);
             }
-        } else {
-            resolve(null);
         }
     });
 }

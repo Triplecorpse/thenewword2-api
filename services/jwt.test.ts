@@ -1,5 +1,5 @@
-import {User} from "../models/User";
-import {jwtDecode, jwtSign, jwtVerify} from "./jwt";
+import {User} from '../models/User';
+import {jwtDecode, jwtSign, jwtVerify} from './jwt';
 
 jest.mock('../models/User');
 
@@ -29,6 +29,11 @@ describe('Jwt module', () => {
         it('Jwt verify should return valid User object if token and request data is correct', async () => {
             const result = await jwtVerify(token, request);
             expect(result).toBeInstanceOf(User);
+        });
+
+        it('Jwt verify should return null if token is not probided', async () => {
+            const result = await jwtVerify('', request);
+            expect(result).toBe(null);
         });
 
         it('Jwt verify should return null if token\'s and request\'s ip address don\'t match', async () => {

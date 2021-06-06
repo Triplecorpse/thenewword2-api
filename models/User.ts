@@ -24,10 +24,7 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
 
     async loadFromDB(loginOrEmail: string, password: string): Promise<void> {
         const query = 'SELECT tnw2.users.id, tnw2.users.login, tnw2.users.email, tnw2.users.password, tnw2.users.native_language, tnw2.relation_users_learning_language.language_id AS learning_languages_ids FROM tnw2.users LEFT JOIN tnw2.relation_users_learning_language ON tnw2.relation_users_learning_language.user_id = tnw2.users.id WHERE login = $1;';
-        const dbResult = await queryDatabase(query, [loginOrEmail])
-            .catch(error => {
-                throw error;
-            });
+        const dbResult = await queryDatabase(query, [loginOrEmail]);
 
         if (!dbResult.length) {
             throw {type: 'USER_NOT_FOUND'};
@@ -90,8 +87,6 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
                 ...this.learningLanguages.map(lang => lang.dbid)
             ]);
         }
-
-        return;
     }
 
     convertToDto(): IUserDto {

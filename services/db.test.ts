@@ -1,12 +1,12 @@
 import * as pg from 'pg';
-import {connectToDatabase} from './db';
+import {connectToDatabase, queryDatabase} from './db';
 import * as util from 'util';
 import * as fs from 'fs';
 
 jest.mock('pg');
 
 describe('Db module', () => {
-    describe('Db connectToDatabase method', () => {
+    describe('ConnectToDatabase method', () => {
         it('should call connect method in pg', async () => {
             const spy = jest.spyOn(pg.Pool.prototype, 'connect');
             await connectToDatabase();
@@ -64,6 +64,14 @@ describe('Db module', () => {
                 await connectToDatabase();
                 expect(spy).not.toBeCalledWith(expect.stringContaining('INSERT INTO tnw2.languages'));
             });
+        });
+    });
+
+    describe('queryDb method', () => {
+        it('Should query pool if appropriate params are passing', async () => {
+            const spy = jest.spyOn(pg.Pool.prototype, 'query');
+            await queryDatabase('INSERT INTO whatever', [1]);
+            expect(spy).toHaveBeenCalledWith('INSERT INTO whatever', [1]);
         });
     });
 });

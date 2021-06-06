@@ -62,6 +62,17 @@ describe('User class', () => {
             expect(spy).toBeCalledWith(expect.stringContaining('INSERT INTO tnw2.users'), expect.arrayContaining([]));
         });
 
+        it('Should fill learning language relation table if there is such information in user object', async () => {
+            user.password = 'password';
+            user.learningLanguages = [{dbid: 1}] as any;
+            spy.mockResolvedValueOnce([{id: 1}]);
+            await user.save();
+            expect(spy).toBeCalledWith(
+                expect.stringContaining('INSERT INTO tnw2.relation_users_learning_language'),
+                expect.arrayContaining([1])
+            );
+        });
+
         it('Should update an instance of user in the db if id is provided', async () => {
             user.dbid = 1;
             user.password = 'password';
@@ -116,9 +127,11 @@ describe('User class', () => {
             user.login = 'login3';
             user.password = 'password3';
             user.dbid = 1;
+            user.learningLanguages = [{dbid: 1}] as any;
 
             expect(user.convertToDto()).toHaveProperty('login', 'login3');
             expect(user.convertToDto()).toHaveProperty('password', 'password3');
+            expect(user.convertToDto()).toHaveProperty('learning_languages', [1]);
         });
     });
 });
