@@ -15,8 +15,8 @@ describe('User class', () => {
 
         beforeEach(() => {
             user = new User();
-            spy.mockRestore();
             spy = jest.spyOn(db, 'queryDatabase');
+            spy.mockRestore();
         });
 
         it('Should query users table if login and password are set', () => {
@@ -39,13 +39,18 @@ describe('User class', () => {
         });
 
         it('Should throw PASSWORD_CHECK_FAILED error if a user was found but password doesn\'t match', async () => {
-            spy.mockRestore();
             spy = spy.mockResolvedValueOnce([{login: 'login', password: 'does_not_match'}]);
             await user.loadFromDB('login', 'password')
                 .catch(error => {
                     expect(error.type).toBe('PASSWORD_CHECK_FAILED');
                 });
             expect(user.login).not.toBeDefined();
+        });
+
+        it('Should create valid user object if user was found and password is \'restore\' and password in the DB is \'to_restore\'', async () => {
+            spy = spy.mockResolvedValueOnce([{login: 'login', password: 'to_restore'}]);
+            await user.loadFromDB('login', 'restore')
+            expect(user.login).toBeDefined();
         });
 
         it('Should complete user object if login and password are matching', async () => {
