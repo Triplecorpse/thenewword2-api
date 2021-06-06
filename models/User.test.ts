@@ -95,4 +95,30 @@ describe('User class', () => {
                 });
         });
     });
+
+    describe('ReplaceWith method', () => {
+        it('Should replace user\'s fields with new ones', () => {
+            user.replaceWith({
+                login: 'login2',
+                password: 'password',
+                learning_languages: [2, 3, 4],
+                native_language: 1,
+                email: 'email@domain.com',
+                new_password: 'new_password'
+            });
+
+            expect(user.login).toBe('login2');
+        });
+    });
+
+    describe('ConvertToDto method', () => {
+        it('Should convert user object to Dto', () => {
+            user.login = 'login3';
+            user.password = 'password3';
+            user.dbid = 1;
+
+            expect(user.convertToDto()).toHaveProperty('login', 'login3');
+            expect(user.convertToDto()).toHaveProperty('password', 'password3');
+        });
+    });
 });
