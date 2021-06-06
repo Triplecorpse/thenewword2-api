@@ -114,7 +114,7 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
 
     async remove(): Promise<void> {
         if (!this.dbid) {
-            throw new Error('NO_ID_PROVIDED');
+            throw {type: 'NO_ID_PROVIDED'};
         }
 
         const query = 'DELETE FROM tnw2.users WHERE id=$1';

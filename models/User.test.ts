@@ -79,12 +79,20 @@ describe('User class', () => {
     });
 
     describe('Remove method', () => {
-        it('Should remove an instance of user in the db if id is provided', () => {
-
+        it('Should remove an instance of user in the db if id is provided', async () => {
+            spy.mockResolvedValueOnce([]);
+            user.dbid = 1;
+            await user.remove();
+            expect(spy).toBeCalledWith(expect.stringContaining('DELETE FROM tnw2.users'), expect.arrayContaining([1]));
         });
 
-        it('Should produce an error NO_ID_PROVIDED if id is NOT provided', () => {
-
+        it('Should produce an error NO_ID_PROVIDED if id is NOT provided', async () => {
+            spy.mockResolvedValueOnce([]);
+            user.dbid = undefined;
+            await user.remove()
+                .catch(error => {
+                    expect(error.type).toBe('NO_ID_PROVIDED');
+                });
         });
     });
 });
