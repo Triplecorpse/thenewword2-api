@@ -56,16 +56,16 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
             this.passwordHash = await util.promisify(bcrypt.hash)(this.password, saltRounds) as string;
         }
 
+        if (!this.passwordHash) {
+            throw {type: 'NO_PASSWORD_PROVIDED'};
+        }
+
         if (this.dbid) {
             await queryDatabase('UPDATE tnw2.users SET (password, email) = ($1, $2) WHERE id = $3 RETURNING *', [
                 this.passwordHash,
                 this.email,
                 this.dbid
-            ])
-                .catch(error => {
-                    console.error(error);
-                    throw error;
-                });
+            ]);
 
             await queryDatabase('DELETE FROM tnw2.relation_users_learning_language WHERE user_id = $1', [
                 this.dbid
@@ -76,11 +76,7 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
                 this.passwordHash,
                 this.email,
                 this.nativeLanguage?.dbid
-            ])
-                .catch(error => {
-                    console.error(error);
-                    throw error;
-                });
+            ]);
 
             this.dbid = user[0].id;
         }
@@ -102,7 +98,9 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
         return {
             password: this.password,
             email: this.email,
-            login: this.login
+            login: this.login,
+            native_language: this.nativeLanguage?.dbid,
+            learning_languages: this.learningLanguages?.map(ll => ll.dbid)
         } as IUserDto;
     }
 
@@ -114,18 +112,13 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
         this.learningLanguages = languages.filter(l => entity?.learning_languages?.includes(l.dbid));
     }
 
-    remove(): Promise<void> {
+    async remove(): Promise<void> {
         if (!this.dbid) {
             throw new Error('NO_ID_PROVIDED');
         }
 
         const query = 'DELETE FROM tnw2.users WHERE id=$1';
 
-        return queryDatabase(query, [this.dbid])
-            .catch(error => {
-                console.error(error);
-                throw error;
-            })
-            .then();
+        return await queryDatabase(query, [this.dbid]).then();
     }
 }
