@@ -38,7 +38,6 @@ export class User implements ICRUDEntity<IUserDto, IUserDb> {
         const compareResult = await util.promisify(bcrypt.compare)(password, user.password);
         const isRestoringPassword = password === 'restore' && user.password === 'to_restore';
         const learningLanguages = dbResult.map(result => result.learning_languages_ids);
-        console.log(user, compareResult, isRestoringPassword);
 
         if (!compareResult && !isRestoringPassword) {
             throw {type: 'PASSWORD_CHECK_FAILED'};
