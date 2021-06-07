@@ -5,7 +5,8 @@
   "main": "app.ts",
   "scripts": {
     "test": "jest --config ./jest.config.ts --coverage --verbose true",
-    "start": "nodemon --config \"./util/nodemon.json\"/ -- dev"
+    "start": "nodemon --config \"./util/nodemon.json\"/ -- dev",
+    "generate-locales": "ts-node dev-services/locales.ts"
   },
   "repository": {
     "type": "git",
