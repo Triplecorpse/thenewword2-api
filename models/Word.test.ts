@@ -1,5 +1,7 @@
 import {Word} from './Word';
 import * as db from '../services/db';
+import {IWordDto} from "../interfaces/dto/IWordDto";
+import {IUserDto} from "../interfaces/dto/IUserDto";
 
 jest.mock('../services/db');
 
@@ -50,11 +52,15 @@ describe('Word class', () => {
     describe('Remove method', () => {
         it('Should remove word from db if id is defined', async () => {
             word.dbid = 1;
+            spy.mockResolvedValueOnce([]);
             await word.remove();
             expect(spy).toBeCalledWith(expect.stringContaining('DELETE FROM tnw2.words'), expect.arrayContaining([1]));
         });
 
         it('Should reject if id is not provided', async () => {
+            spy.mockResolvedValueOnce([]);
+            spy.mockRestore();
+            delete word.dbid;
             await word.remove()
                 .catch(error => {
                     expect(error.type).toBe('NO_ID_PROVIDED')
@@ -63,7 +69,21 @@ describe('Word class', () => {
     });
 
     describe('ReplaceWith method', () => {
+        const wordDto: IWordDto = {
+            word: 'word',
+            translations: [],
+            speech_part_id: 1,
+            gender_id: 1,
+            forms: [],
+            original_language_id: 1,
+            translated_language_id: 2,
+            remarks: 'string',
+            stress_letter_index: 1
+        };
+        word.replaceWith(wordDto)
 
+        expect(word.word).toBe('word')
+        expect(word.remarks).toBe('string')
     });
 
     describe('ConvertToDto method', () => {
