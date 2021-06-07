@@ -8,7 +8,6 @@ import {ICRUDEntity} from '../interfaces/ICRUDEntity';
 import {IWordDb} from '../interfaces/db/IWordDb';
 import {IWordFilterData} from '../interfaces/IWordFilterData';
 import {genders, speechParts, languages} from '../const/constData';
-import {log} from "util";
 
 export class Word implements ICRUDEntity<IWordDto, IWordDb> {
     dbid?: number;

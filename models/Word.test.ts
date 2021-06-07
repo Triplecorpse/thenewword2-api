@@ -33,10 +33,33 @@ describe('Word class', () => {
     });
 
     describe('Save method', () => {
+        it('Should query db for create if id is not assigned', async () => {
+            spy.mockResolvedValueOnce([]);
+            await word.save();
+            expect(spy).toBeCalledWith(expect.stringContaining('INSERT INTO tnw2.words'), expect.arrayContaining([]));
+        });
+
+        it('Should query db for update if id is assigned', async () => {
+            spy.mockResolvedValueOnce([]);
+            word.dbid = 1;
+            await word.save();
+            expect(spy).toBeCalledWith(expect.stringContaining('UPDATE tnw2.words'), expect.arrayContaining([1]));
+        });
     });
 
     describe('Remove method', () => {
+        it('Should remove word from db if id is defined', async () => {
+            word.dbid = 1;
+            await word.remove();
+            expect(spy).toBeCalledWith(expect.stringContaining('DELETE FROM tnw2.words'), expect.arrayContaining([1]));
+        });
 
+        it('Should reject if id is not provided', async () => {
+            await word.remove()
+                .catch(error => {
+                    expect(error.type).toBe('NO_ID_PROVIDED')
+                });
+        });
     });
 
     describe('ReplaceWith method', () => {
