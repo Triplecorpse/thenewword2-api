@@ -50,3 +50,22 @@ CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
     false_times_guessed integer DEFAULT 0,
     partly_times_guessed integer DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS tnw2.speech_parts
+(
+    id    serial PRIMARY KEY,
+    title text NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tnw2.genders
+(
+    id    serial PRIMARY KEY,
+    title text NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tnw2.languages
+(
+    id           serial PRIMARY KEY,
+    iso2         char(2) NOT NULL,
+    english_name text,
+    native_name  text,
+    rtl          boolean
+);
