@@ -3,17 +3,17 @@ import {Request, Response} from 'express';
 import {queryDatabase} from '../services/db';
 import {Word} from '../models/Word';
 import {genders, languages, speechParts} from '../const/constData';
-import {User} from "../models/User";
-import {jwtDecode, jwtSign} from "../services/jwt";
-import {IWordDto} from "../interfaces/dto/IWordDto";
+import {User} from '../models/User';
+import {jwtDecode, jwtSign} from '../services/jwt';
+import {IWordDto} from '../interfaces/dto/IWordDto';
 
 export const wordRouter = express.Router();
 
 wordRouter.get('/metadata', (req: Request, res: Response) => {
     res.json({
-        speechParts: speechParts.map(sp => ({id: sp.dbid, title: sp.body})),
-        genders: genders.map(g => ({id: g.dbid, title: g.body})),
-        languages: languages.map(l => ({id: l.dbid, title: l.body.englishName}))
+        speechParts: speechParts.map(sp => sp.convertToDto()),
+        genders: genders.map(g => g.convertToDto()),
+        languages: languages.map(l => l.convertToDto())
     });
 });
 
@@ -32,7 +32,7 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
     await word.save()
         .catch(error => {
             const err: any = {...error};
-            if (!error.type) {
+            if (!error?.type) {
                 err.desc = error.message;
                 err.type = 'GENERIC';
             }
@@ -52,7 +52,7 @@ wordRouter.get('/get', async (req: Request, res: Response) => {
     const wordIds: { id: number }[] = await queryDatabase<{ id: number }>(query, [req.user?.dbid])
         .catch(error => {
             const err: any = {...error};
-            if (!error.type) {
+            if (!error?.type) {
                 err.desc = error.message;
                 err.type = 'GENERIC';
             }
@@ -81,7 +81,7 @@ wordRouter.put('/edit', async (req: Request, res: Response) => {
     await word.loadFromDB(req.body.id, {}, req.user)
         .catch(error => {
             const err: any = {...error};
-            if (!error.type) {
+            if (!error?.type) {
                 err.desc = error.message;
                 err.type = 'GENERIC';
             }
@@ -92,7 +92,7 @@ wordRouter.put('/edit', async (req: Request, res: Response) => {
     await word.save()
         .catch(error => {
             const err: any = {...error};
-            if (!error.type) {
+            if (!error?.type) {
                 err.desc = error.message;
                 err.type = 'GENERIC';
             }
@@ -118,7 +118,7 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
     await word.loadFromDB(+req.query.id, {}, req.user)
         .catch(error => {
             const err: any = {...error};
-            if (!error.type) {
+            if (!error?.type) {
                 err.desc = error.message;
                 err.type = 'GENERIC';
             }
@@ -128,7 +128,7 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
     await word.remove()
         .catch(error => {
             const err: any = {...error};
-            if (!error.type) {
+            if (!error?.type) {
                 err.desc = error.message;
                 err.type = 'GENERIC';
             }
@@ -148,7 +148,7 @@ wordRouter.get('/exercise', async (req: Request, res: Response) => {
     const words = await getWordsByQuery(query, [req.user?.dbid], req.user as User)
         .catch(error => {
             const err: any = {...error};
-            if (!error.type) {
+            if (!error?.type) {
                 err.desc = error.message;
                 err.type = 'GENERIC';
             }
@@ -159,7 +159,7 @@ wordRouter.get('/exercise', async (req: Request, res: Response) => {
     const encoded = await jwtSign(JSON.stringify(wordsDto))
         .catch(error => {
             const err: any = {...error};
-            if (!error.type) {
+            if (!error?.type) {
                 err.desc = error.message;
                 err.type = 'JWT_ERROR';
             }
@@ -188,7 +188,7 @@ wordRouter.post('/exercise', async (req: Request, res: Response) => {
     const decoded: IWordDto[] = await jwtDecode(req.body.encoded)
         .catch(error => {
             const err: any = {...error};
-            if (!error.type) {
+            if (!error?.type) {
                 err.desc = error.message;
                 err.type = 'JWT_ERROR';
             }

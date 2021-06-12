@@ -1,5 +1,5 @@
-export interface IReadOnlyEntity<T> {
+export interface IReadOnlyEntity<T = any, K = any> {
     dbid: number;
-    body: T;
     loadFromDb(...args: any): void;
+    convertToDto(): K
 }

@@ -1,3 +1,23 @@
+CREATE SCHEMA IF NOT EXISTS tnw2 AUTHORIZATION postgres;
+CREATE TABLE IF NOT EXISTS tnw2.speech_parts
+(
+    id    serial PRIMARY KEY,
+    title text NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tnw2.genders
+(
+    id    serial PRIMARY KEY,
+    title text NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tnw2.languages
+(
+    id           serial PRIMARY KEY,
+    iso2         char(2) NOT NULL,
+    english_name text,
+    native_name  text,
+    rtl          boolean
+);
+
 CREATE TABLE IF NOT EXISTS tnw2.users (
     id serial PRIMARY KEY,
     login text NOT NULL UNIQUE CHECK(login != ''),
@@ -49,23 +69,4 @@ CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
     right_times_guessed integer DEFAULT 0,
     false_times_guessed integer DEFAULT 0,
     partly_times_guessed integer DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS tnw2.speech_parts
-(
-    id    serial PRIMARY KEY,
-    title text NOT NULL
-);
-CREATE TABLE IF NOT EXISTS tnw2.genders
-(
-    id    serial PRIMARY KEY,
-    title text NOT NULL
-);
-CREATE TABLE IF NOT EXISTS tnw2.languages
-(
-    id           serial PRIMARY KEY,
-    iso2         char(2) NOT NULL,
-    english_name text,
-    native_name  text,
-    rtl          boolean
 );

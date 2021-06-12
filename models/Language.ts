@@ -1,42 +1,53 @@
-import {IReadOnlyEntity} from "../interfaces/IReadOnlyEntity";
-import {ILanguageDb} from "../interfaces/db/ILanguageDb";
-import {queryDatabase} from "../services/db";
+import {IReadOnlyEntity} from '../interfaces/IReadOnlyEntity';
+import {queryDatabase} from '../services/db';
+import {ILanguage} from '../interfaces/ILanguage';
+import {ILanguageDto} from '../interfaces/dto/IWordMetadataDto';
 
-export class Language implements IReadOnlyEntity<{ code2: string; englishName: string; nativeName: string; }> {
+export class Language implements ILanguage, IReadOnlyEntity<ILanguage, ILanguageDto> {
     dbid: number = 0;
-    body = {
-        code2: '',
-        englishName: '',
-        nativeName: ''
-    }
+    iso2: string = '';
+    englishName: string = '';
+    nativeName: string = '';
+    rtl: boolean = false;
 
-    constructor(data?: ILanguageDb) {
-        this.dbid = data?.id || 0;
-        this.body = {
-            code2: data?.code2 || '',
-            englishName: data?.english_name || '',
-            nativeName: data?.native_name || ''
-        }
-    }
-
-    async loadFromDb(idOrIso2: number | string) {
-        let query = 'SELECT id, code2, english_name, native_name FROM tnw2.languages WHERE ';
-
+    constructor(idOrIso2?: number | string) {
         if (typeof idOrIso2 === 'number') {
+            this.dbid = idOrIso2 || 0;
+        } else if (typeof idOrIso2 === 'string') {
+            this.iso2 = idOrIso2 || '';
+        }
+    }
+
+    async loadFromDb(idOrIso2?: number | string) {
+        let query = 'SELECT id, iso2, english_name, native_name, rtl FROM tnw2.languages WHERE ';
+        let param: number | string = '';
+
+        if (typeof idOrIso2 === 'number' || this.dbid) {
             query += 'id = $1';
-        } else {
-            query += 'code2 = $1';
+            param = idOrIso2 || this.dbid;
+        } else if (typeof idOrIso2 === 'string' || this.iso2) {
+            query += 'iso2 = $1';
+            param = idOrIso2 || this.iso2;
         }
 
-        const result: ILanguageDb[] = await queryDatabase(query, [idOrIso2]);
+        const result = await queryDatabase(query, [param]);
 
         if (result?.length) {
             this.dbid = result[0].id;
-            this.body = {
-                code2: result[0].code2,
-                englishName: result[0].english_name,
-                nativeName: result[0].native_name
-            }
+            this.iso2 = result[0].iso2;
+            this.englishName = result[0].english_name;
+            this.nativeName = result[0].native_name;
+            this.rtl = result[0].rtl;
         }
+    }
+
+    convertToDto(): ILanguageDto {
+        return {
+            id: this.dbid,
+            rtl: this.rtl,
+            iso2: this.iso2,
+            english_name: this.englishName,
+            native_name: this.nativeName
+        };
     }
 }

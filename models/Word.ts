@@ -5,11 +5,10 @@ import {SpeechPart} from './SpeechPart';
 import {Gender} from './Gender';
 import {Language} from './Language';
 import {ICRUDEntity} from '../interfaces/ICRUDEntity';
-import {IWordDb} from '../interfaces/db/IWordDb';
 import {IWordFilterData} from '../interfaces/IWordFilterData';
 import {genders, speechParts, languages} from '../const/constData';
 
-export class Word implements ICRUDEntity<IWordDto, IWordDb> {
+export class Word implements ICRUDEntity<IWordDto> {
     dbid?: number;
     word?: string;
     translations?: string[];
@@ -53,16 +52,16 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb> {
 
     async loadFromDB(id: number, filterData?: IWordFilterData, user?: User): Promise<void> {
         const queryPart = this.createFilterDataSubquery(filterData);
-        const query = 'SELECT tnw2.words.id, word, translations, forms, remarks, stress_letter_index, tnw2.speech_parts.title AS speech_part, tnw2.genders.title AS gender, ol.english_name AS original_language, tl.english_name AS translated_language FROM tnw2.words LEFT JOIN tnw2.speech_parts ON tnw2.words.speech_part_id=tnw2.speech_parts.id LEFT JOIN tnw2.genders ON tnw2.words.gender_id=tnw2.genders.id LEFT JOIN tnw2.languages AS ol ON tnw2.words.original_language_id=ol.id LEFT JOIN tnw2.languages AS tl ON tnw2.words.translated_language_id=tl.id WHERE tnw2.words.id = $1' + queryPart.queryPart;
+        const query = 'SELECT id, word, translations, forms, remarks, stress_letter_index, speech_part, gender, original_language, translated_language FROM tnw2.words WHERE id = $1' + queryPart.queryPart;
         const dbResult = await queryDatabase(query, [id, ...queryPart.params]);
 
         if (dbResult?.length) {
             const loadedWord = dbResult[0];
             this.dbid = loadedWord.id;
-            this.speechPart = speechParts.find(sp => sp.body === loadedWord.speech_part);
-            this.gender = genders.find(g => g.body === loadedWord.gender);
-            this.originalLanguage = languages.find(l => l.body.englishName === loadedWord.original_language);
-            this.translatedLanguage = languages.find(l => l.body.englishName === loadedWord.translated_language);
+            this.speechPart = speechParts.find(sp => sp.dbid === loadedWord.speech_part);
+            this.gender = genders.find(g => g.dbid === loadedWord.gender);
+            this.originalLanguage = languages.find(l => l.dbid === loadedWord.original_language);
+            this.translatedLanguage = languages.find(l => l.dbid === loadedWord.translated_language);
             this.word = loadedWord.word;
             this.translations = loadedWord.translations;
             this.forms = loadedWord.forms;
@@ -89,21 +88,16 @@ export class Word implements ICRUDEntity<IWordDto, IWordDb> {
     convertToDto(): IWordDto {
         return {
             user_created_id: this.userCreated?.dbid,
-            user_created: this.userCreated?.convertToDto(),
             stress_letter_index: this.stressLetterIndex,
             remarks: this.remarks,
             forms: this.forms,
             translations: this.translations,
             word: this.word,
             gender_id: this.gender?.dbid,
-            gender_name: this.gender?.body,
             id: this.dbid,
             original_language_id: this.originalLanguage?.dbid,
-            original_language_english_name: this.originalLanguage?.body.englishName,
             translated_language_id: this.translatedLanguage?.dbid,
-            translated_language_english_name: this.translatedLanguage?.body.englishName,
-            speech_part_id: this.speechPart?.dbid,
-            speech_part_name: this.speechPart?.body
+            speech_part_id: this.speechPart?.dbid
         } as IWordDto;
     }
 

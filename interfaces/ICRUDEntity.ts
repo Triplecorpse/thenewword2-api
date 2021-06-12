@@ -1,4 +1,4 @@
-export interface ICRUDEntity<Dto, Db> {
+export interface ICRUDEntity<Dto = any, Db = any> {
     dbid?: number;
     replaceWith(entity: Dto): void;
     loadFromDB(...args: any): Promise<void>;

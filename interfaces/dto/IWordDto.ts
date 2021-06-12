@@ -5,7 +5,6 @@ export interface IWordDto {
     word?: string;
     translations: string[];
     speech_part_id: number;
-    speech_part_name?: string;
     gender_id: number;
     gender_name?: string;
     forms: string[];

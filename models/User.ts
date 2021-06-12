@@ -3,13 +3,12 @@ import {queryDatabase} from '../services/db';
 import * as util from 'util';
 import * as bcrypt from 'bcrypt';
 import {ICRUDEntity} from '../interfaces/ICRUDEntity';
-import {IUserDb} from '../interfaces/db/IUserDb';
 import {Language} from './Language';
 import {languages} from '../const/constData';
 
 const saltRounds = 10;
 
-export class User implements ICRUDEntity<IUserDto, IUserDb> {
+export class User implements ICRUDEntity<IUserDto> {
     dbid?: number;
     login: string = '';
     password?: string = '';

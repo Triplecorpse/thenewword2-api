@@ -7,14 +7,11 @@ import {connectToDatabase, queryDatabase} from './services/db';
 import {jwtVerify} from './services/jwt';
 import {wordRouter} from './routes/word';
 import {User} from './models/User';
-import {ILanguageDb} from './interfaces/db/ILanguageDb';
-import {ISpeechPartDb} from './interfaces/db/ISpeechPartDb';
-import {IGenderDb} from './interfaces/db/IGenderDb';
 import {genders, languages, speechParts} from './const/constData';
 import {Gender} from './models/Gender';
 import {SpeechPart} from './models/SpeechPart';
 import {Language} from './models/Language';
-import {wordsetRouter} from "./routes/wordset";
+import {wordsetRouter} from './routes/wordset';
 
 dotenv.config();
 
@@ -30,20 +27,18 @@ declare global {
 }
 
 connectToDatabase()
-    .catch(error => {
-        console.error(error);
-        throw error
-    })
     .then(() => Promise.all([
-        queryDatabase<IGenderDb>('SELECT id, title FROM tnw2.genders'),
-        queryDatabase<ISpeechPartDb>('SELECT id, title FROM tnw2.speech_parts'),
-        queryDatabase<ILanguageDb>('SELECT id, code2, english_name, native_name FROM tnw2.languages')
+        queryDatabase('SELECT id FROM tnw2.genders'),
+        queryDatabase('SELECT id FROM tnw2.speech_parts'),
+        queryDatabase('SELECT id FROM tnw2.languages')
     ]))
     .then(result => {
-        genders.push(...result[0].map(gender => new Gender(gender)));
-        speechParts.push(...result[1].map(speechPart => new SpeechPart(speechPart)));
-        languages.push(...result[2].map(language => new Language(language)));
+        genders.push(...result[0].map(gender => new Gender(gender.id)));
+        speechParts.push(...result[1].map(speechPart => new SpeechPart(speechPart.id)));
+        languages.push(...result[2].map(language => new Language(language.id)));
     })
+    .then(() => [...genders, ...speechParts, ...languages])
+    .then(result => Promise.all(result.map(entity => entity.loadFromDb())))
     .then(() => {
         app.listen(process.env.PORT, () => {
             console.log('listening on port', process.env.PORT);

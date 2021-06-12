@@ -1,5 +1,3 @@
-CREATE SCHEMA IF NOT EXISTS tnw2 AUTHORIZATION postgres;
-
 INSERT INTO tnw2.speech_parts (title)
 VALUES ('noun'),
        ('pronoun'),

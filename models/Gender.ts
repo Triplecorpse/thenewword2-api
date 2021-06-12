@@ -1,23 +1,30 @@
-import {IReadOnlyEntity} from "../interfaces/IReadOnlyEntity";
-import {IGenderDb} from "../interfaces/db/IGenderDb";
-import {queryDatabase} from "../services/db";
+import {IReadOnlyEntity} from '../interfaces/IReadOnlyEntity';
+import {queryDatabase} from '../services/db';
+import {IGenderDto} from '../interfaces/dto/IWordMetadataDto';
+import {IGender} from '../interfaces/IGender';
 
-export class Gender implements IReadOnlyEntity<string> {
+export class Gender implements IGender, IReadOnlyEntity<IGender, IGenderDto> {
     dbid: number = 0;
-    body: string = '';
+    englishName: string = '';
 
-    constructor(data?: IGenderDb) {
-        this.dbid = data?.id || 0;
-        this.body = data?.title || '';
+    constructor(id?: number) {
+        this.dbid = id || 0;
     }
 
-    async loadFromDb(id: number) {
+    async loadFromDb(id?: number) {
         const query = 'SELECT id, title FROM tnw2.genders WHERE id = $1';
-        const result: IGenderDb[] = await queryDatabase(query, [id]);
+        const result = await queryDatabase(query, [id || this.dbid]);
 
         if (result?.length) {
             this.dbid = result[0].id;
-            this.body = result[0].title;
+            this.englishName = result[0].title;
+        }
+    }
+
+    convertToDto(): IGenderDto {
+        return {
+            id: this.dbid,
+            name: this.englishName
         }
     }
 }
