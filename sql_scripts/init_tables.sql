@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS tnw2.relation_words_users_copied (
 CREATE TABLE IF NOT EXISTS tnw2.word_sets (
     id serial PRIMARY KEY,
     title text NOT NULL,
+    original_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,
+    translated_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,
     user_created_id integer REFERENCES tnw2.users(id)
 );
 CREATE TABLE IF NOT EXISTS tnw2.relation_words_word_sets (
