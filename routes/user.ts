@@ -16,9 +16,7 @@ userRouter.post('/register', async (req: Request, res: Response) => {
         await user.save();
         res.status(201).json({});
     } catch (error) {
-        if (error.name === 'RECAPTCHA_ERROR') {
-            res.status(400).json(error);
-        } else if (error.code === '23505') {
+        if (error.code === '23505') {
             if (error.constraint === 'users_login_key') {
                 res.status(400).json(new CustomError('LOGIN_EXISTS'));
             } else if (error.constraint === 'users_email_key') {
@@ -33,39 +31,61 @@ userRouter.post('/register', async (req: Request, res: Response) => {
 });
 
 userRouter.post('/login', async (req: Request, res: Response) => {
-    await validateRecaptcha(req.body.token)
-        .catch(() => {
-            res.status(400).json({type: 'RECAPTCHA_ERROR'});
+    try {
+        await validateRecaptcha(req.body.token);
+        const user = new User();
+        await user.loadFromDB(req.body.login, req.body.password);
+        const payload: IUserTokenPayload = {
+            host: req.hostname,
+            IP: req.ip,
+            password: req.body.password,
+            UA: req.get('user-agent') as string,
+            login: req.body.login
+        };
+        const webtoken = await jwtSign(payload);
+        res.status(200).json({
+            token: webtoken,
+            login: user.login,
+            native_language: user.nativeLanguage?.dbid,
+            learning_languages: user.learningLanguages.map(lang => lang.dbid)
         });
-
-    const user = new User();
-
-    await user.loadFromDB(req.body.login, req.body.password)
-        .catch(error => {
-            console.error(error);
-            res.sendStatus(401);
-        });
-
-    const payload: IUserTokenPayload = {
-        host: req.hostname,
-        IP: req.ip,
-        password: req.body.password,
-        UA: req.get('user-agent') as string,
-        login: req.body.login
+    } catch (error) {
+        console.log(error);
+        res.status(400).json(error);
     }
-    const webtoken = await jwtSign(payload)
-        .catch(error => {
-            console.error(error);
-            res.status(500).json(error);
-            throw error;
-        });
+    // await validateRecaptcha(req.body.token)
+    //     .catch(() => {
+    //         res.status(400).json({type: 'RECAPTCHA_ERROR'});
+    //     });
+    //
+    // const user = new User();
+    //
+    // await user.loadFromDB(req.body.login, req.body.password)
+    //     .catch(error => {
+    //         console.error(error);
+    //         res.sendStatus(401);
+    //     });
 
-    res.status(200).json({
-        token: webtoken,
-        login: user.login,
-        native_language: user.nativeLanguage?.dbid,
-        learning_languages: user.learningLanguages.map(lang => lang.dbid)
-    });
+    // const payload: IUserTokenPayload = {
+    //     host: req.hostname,
+    //     IP: req.ip,
+    //     password: req.body.password,
+    //     UA: req.get('user-agent') as string,
+    //     login: req.body.login
+    // }
+    // const webtoken = await jwtSign(payload)
+    //     .catch(error => {
+    //         console.error(error);
+    //         res.status(500).json(error);
+    //         throw error;
+    //     });
+    //
+    // res.status(200).json({
+    //     token: webtoken,
+    //     login: user.login,
+    //     native_language: user.nativeLanguage?.dbid,
+    //     learning_languages: user.learningLanguages.map(lang => lang.dbid)
+    // });
 });
 
 userRouter.post('/modify', async (req: Request, res: Response) => {

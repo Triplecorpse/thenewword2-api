@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import {ICRUDEntity} from '../interfaces/ICRUDEntity';
 import {Language} from './Language';
 import {languages} from '../const/constData';
+import {CustomError} from "./CustomError";
 
 const saltRounds = 10;
 
@@ -26,7 +27,7 @@ export class User implements ICRUDEntity<IUserDto> {
         const dbResult = await queryDatabase(query, [loginOrEmail]);
 
         if (!dbResult.length) {
-            throw {type: 'USER_NOT_FOUND'};
+            throw new CustomError('USER_NOT_FOUND');
         }
 
 
@@ -36,7 +37,7 @@ export class User implements ICRUDEntity<IUserDto> {
         const learningLanguages = dbResult.map(result => result.learning_languages_ids);
 
         if (!compareResult && !isRestoringPassword) {
-            throw {type: 'PASSWORD_CHECK_FAILED'};
+            throw new CustomError('PASSWORD_CHECK_FAILED');
         } else {
             this.login = user.login;
             this.email = user.email;
