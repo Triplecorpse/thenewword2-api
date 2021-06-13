@@ -1,29 +1,35 @@
 import * as express from 'express';
 import {Request, Response} from 'express';
-import {queryDatabase} from '../services/db';
 import {IUserTokenPayload} from '../interfaces/IUserTokenPayload';
 import {jwtSign} from '../services/jwt';
-import {IUserDto} from '../interfaces/dto/IUserDto';
 import {User} from '../models/User';
-import {validateRecaptcha} from "../services/recaptcha";
+import {validateRecaptcha} from '../services/recaptcha';
+import {CustomError} from '../models/CustomError';
 
 export const userRouter = express.Router();
 
 userRouter.post('/register', async (req: Request, res: Response) => {
-    await validateRecaptcha(req.body.token)
-        .catch(() => {
-            res.status(400).json({type: 'RECAPTCHA_ERROR'});
-        });
-
     const user = new User(req.body);
 
-    await user.save()
-        .catch(error => {
+    try {
+        await validateRecaptcha(req.body.token);
+        await user.save();
+        res.status(201).json({});
+    } catch (error) {
+        if (error.name === 'RECAPTCHA_ERROR') {
             res.status(400).json(error);
-            throw error;
-        });
-
-    res.status(201).json({});
+        } else if (error.code === '23505') {
+            if (error.constraint === 'users_login_key') {
+                res.status(400).json(new CustomError('LOGIN_EXISTS'));
+            } else if (error.constraint === 'users_email_key') {
+                res.status(400).json(new CustomError('EMAIL_EXISTS'));
+            } else {
+                res.status(400).json(error);
+            }
+        } else {
+            res.status(400).json(error);
+        }
+    }
 });
 
 userRouter.post('/login', async (req: Request, res: Response) => {

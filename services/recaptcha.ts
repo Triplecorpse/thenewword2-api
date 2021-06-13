@@ -1,5 +1,6 @@
 import * as request from 'request';
 import * as dotenv from 'dotenv';
+import {CustomError} from "../models/CustomError";
 
 dotenv.config();
 
@@ -23,25 +24,25 @@ export function validateRecaptcha(key: string): Promise<IRecaptchaResponse> {
     };
 
     return new Promise<IRecaptchaResponse>((resolve, reject) => {
-        request.post(captchaRequestOpts, (g_error: any, g_response: any) => {
-            if (g_error) {
-                reject({type: 'RECAPTCHA_ERROR', error: g_error});
+        request.post(captchaRequestOpts, (error: any, response: any) => {
+            if (error) {
+                reject(new CustomError('RECAPTCHA_ERROR', error));
                 return;
             }
 
             try {
-                g_response = JSON.parse(g_response.body);
-            } catch (e) {
-                reject({type: 'RECAPTCHA_ERROR', error: e});
+                response = JSON.parse(response.body);
+            } catch (error) {
+                reject(new CustomError('RECAPTCHA_ERROR', error));
                 return;
             }
 
-            if (!g_response.success) {
-                reject({type: 'RECAPTCHA_ERROR', error: g_response});
+            if (!response.success) {
+                reject(new CustomError('RECAPTCHA_ERROR', response));
                 return;
             }
 
-            resolve(g_response);
+            resolve(response);
         });
     });
 }
