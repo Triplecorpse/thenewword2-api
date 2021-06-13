@@ -50,7 +50,6 @@ userRouter.post('/login', async (req: Request, res: Response) => {
             learning_languages: user.learningLanguages.map(lang => lang.dbid)
         });
     } catch (error) {
-        console.log(error);
         res.status(400).json(error);
     }
     // await validateRecaptcha(req.body.token)

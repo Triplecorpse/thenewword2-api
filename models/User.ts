@@ -54,38 +54,58 @@ export class User implements ICRUDEntity<IUserDto> {
         }
 
         if (!this.passwordHash) {
-            throw {type: 'NO_PASSWORD_PROVIDED'};
+            throw new CustomError('NO_PASSWORD_PROVIDED');
         }
 
         if (this.dbid) {
-            await queryDatabase('UPDATE tnw2.users SET (password, email) = ($1, $2) WHERE id = $3 RETURNING *', [
-                this.passwordHash,
-                this.email,
-                this.dbid
-            ]);
+            try {
+                await queryDatabase('UPDATE tnw2.users SET (password, email) = ($1, $2) WHERE id = $3 RETURNING *', [
+                    this.passwordHash,
+                    this.email,
+                    this.dbid
+                ]);
 
-            await queryDatabase('DELETE FROM tnw2.relation_users_learning_language WHERE user_id = $1', [
-                this.dbid
-            ]);
+                await queryDatabase('DELETE FROM tnw2.relation_users_learning_language WHERE user_id = $1', [
+                    this.dbid
+                ]);
+            } catch (error) {
+                throw new CustomError('GENERIC_DB_ERROR', error);
+            }
         } else {
-            const user = await queryDatabase('INSERT INTO tnw2.users (login, password, email, native_language) VALUES($1, $2, $3, $4) RETURNING *', [
-                this.login,
-                this.passwordHash,
-                this.email,
-                this.nativeLanguage?.dbid
-            ]);
+            try {
+                const user = await queryDatabase('INSERT INTO tnw2.users (login, password, email, native_language) VALUES($1, $2, $3, $4) RETURNING *', [
+                    this.login,
+                    this.passwordHash,
+                    this.email,
+                    this.nativeLanguage?.dbid
+                ]);
 
-            this.dbid = user[0].id;
+                this.dbid = user[0].id;
+            } catch (error) {
+                if (error.code === '23505') {
+                    if (error.constraint === 'users_login_key') {
+                        throw new CustomError('LOGIN_EXISTS');
+                    } else if (error.constraint === 'users_email_key') {
+                        throw new CustomError('EMAIL_EXISTS');
+                    } else {
+                        throw new CustomError('GENERIC_DB_ERROR', error);
+                    }
+                }
+            }
         }
 
         if (this.learningLanguages.length) {
-            const queryPart =
-                this.learningLanguages.map((lang, index) => `($1, $${index + 2})`).join(', ');
+            try {
+                const queryPart =
+                    this.learningLanguages.map((lang, index) => `($1, $${index + 2})`).join(', ');
 
-            await queryDatabase(`INSERT INTO tnw2.relation_users_learning_language (user_id, language_id) VALUES ${queryPart} RETURNING *`, [
-                this.dbid,
-                ...this.learningLanguages.map(lang => lang.dbid)
-            ]);
+                await queryDatabase(`INSERT INTO tnw2.relation_users_learning_language (user_id, language_id) VALUES ${queryPart} RETURNING *`, [
+                    this.dbid,
+                    ...this.learningLanguages.map(lang => lang.dbid)
+                ]);
+            } catch (error) {
+                throw new CustomError('GENERIC_DB_ERROR', error);
+            }
         }
     }
 
@@ -109,11 +129,15 @@ export class User implements ICRUDEntity<IUserDto> {
 
     async remove(): Promise<void> {
         if (!this.dbid) {
-            throw {type: 'NO_ID_PROVIDED'};
+            throw new CustomError('NO_ID_PROVIDED');
         }
 
-        const query = 'DELETE FROM tnw2.users WHERE id=$1';
+        try {
+            const query = 'DELETE FROM tnw2.users WHERE id=$1';
 
-        return await queryDatabase(query, [this.dbid]).then();
+            return await queryDatabase(query, [this.dbid]).then();
+        } catch (error) {
+            throw new CustomError('GENERIC_DB_ERROR', error);
+        }
     }
 }

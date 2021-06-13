@@ -21,7 +21,7 @@ describe('User class', () => {
             }]);
             await user.loadFromDB('login', 'password')
                 .catch(error => {
-                    expect(error.type).not.toBeDefined();
+                    expect(error).not.toBeDefined();
                 });
             expect(user.login).toBe('login');
         });
@@ -30,7 +30,7 @@ describe('User class', () => {
             spy = spy.mockResolvedValueOnce([]);
             await user.loadFromDB('login', 'password')
                 .catch(error => {
-                    expect(error.type).toBe('USER_NOT_FOUND')
+                    expect(error.name).toBe('USER_NOT_FOUND')
                 });
             expect(user.login).not.toBeDefined();
         });
@@ -42,7 +42,7 @@ describe('User class', () => {
             }]);
             await user.loadFromDB('login', 'not_correct')
                 .catch(error => {
-                    expect(error.type).toBe('PASSWORD_CHECK_FAILED');
+                    expect(error.name).toBe('PASSWORD_CHECK_FAILED');
                 });
             expect(user.login).not.toBeDefined();
         });
@@ -84,7 +84,7 @@ describe('User class', () => {
             user.dbid = 1;
             user.save()
                 .catch(error => {
-                    expect(error.type).toBe('NO_PASSWORD_PROVIDED');
+                    expect(error.name).toBe('NO_PASSWORD_PROVIDED');
                 })
         });
     });
@@ -102,7 +102,7 @@ describe('User class', () => {
             user.dbid = undefined;
             await user.remove()
                 .catch(error => {
-                    expect(error.type).toBe('NO_ID_PROVIDED');
+                    expect(error.name).toBe('NO_ID_PROVIDED');
                 });
         });
     });
