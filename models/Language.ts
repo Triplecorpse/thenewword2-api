@@ -4,10 +4,10 @@ import {ILanguage} from '../interfaces/ILanguage';
 import {ILanguageDto} from '../interfaces/dto/IWordMetadataDto';
 
 export class Language implements ILanguage, IReadOnlyEntity<ILanguage, ILanguageDto> {
-    dbid: number = 0;
-    iso2: string = '';
-    englishName: string = '';
-    nativeName: string = '';
+    dbid: number;
+    iso2: string;
+    englishName: string;
+    nativeName: string;
     rtl: boolean = false;
 
     constructor(idOrIso2?: number | string) {

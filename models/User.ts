@@ -59,12 +59,13 @@ export class User implements ICRUDEntity<IUserDto> {
 
         if (this.dbid) {
             try {
-                await queryDatabase('UPDATE tnw2.users SET (password, email) = ($1, $2) WHERE id = $3 RETURNING *', [
+                await queryDatabase('UPDATE tnw2.users SET (password, email, last_modified_at) = ($1, $2, (NOW() AT TIME ZONE \'utc\')) WHERE id = $3 RETURNING *', [
                     this.passwordHash,
                     this.email,
                     this.dbid
                 ]);
 
+                // TODO: Optimize updating learning languages
                 await queryDatabase('DELETE FROM tnw2.relation_users_learning_language WHERE user_id = $1', [
                     this.dbid
                 ]);
