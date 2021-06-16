@@ -33,8 +33,6 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
 
     async loadFromDB(id: number): Promise<void> {
         const query = 'SELECT id, title, original_language_id, translated_language_id, user_created_id FROM tnw2.word_sets WHERE id=$1';
-        const queryWordSetsWords = 'SELECT word_set_id, word_id FROM tnw2.relation_words_word_sets WHERE word_set_id=$1';
-        const queryWordSetsUsers = 'SELECT word_set_id, user_id FROM tnw2.relation_users_word_sets WHERE word_set_id=$1';
 
         return Promise.resolve(undefined);
     }
@@ -75,27 +73,18 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
             if (userRelationQuery) {
                 await queryDatabase(userRelationQuery, [this.user.dbid, this.dbid]);
             }
-
-
-            // const wordIdsAssignedResult = await queryDatabase('SELECT word_id from tnw2.relation_words_word_sets where word_set_id=$1', [this.dbid]);
-            // const wordIdsAssigned = wordIdsAssignedResult.map(({word_id}) => word_id);
-            // const actualWordIds = this.words.map(({dbid}) => dbid);
-            // const wordIdsToAdd = actualWordIds.filter(id => !wordIdsAssigned.includes(id));
-            // const wordIdsToRemove = wordIdsAssigned.filter(id => !actualWordIds.includes(id));
-            // const insertValues = wordIdsToAdd.map(id => `(${id}, ${this.dbid})`);
-            // const removeWhere = `word_id IN (${wordIdsToRemove.join(',')})`;
-            //
-            // await (`INSERT INTO tnw2.relation_words_word_sets (word_id, word_set_id) VALUES ${insertValues.join(',')}`);
-            // await (`DELETE FROM tnw2.relation_words_word_sets WHERE ${removeWhere}`);
         } catch (error) {
             console.log(error, this.originalLanguage);
             throw new CustomError('SAVE_FAILED', error);
         }
     }
 
-    static async factoryLoad(userAssignedId: number): Promise<Wordset[]> {
-        const queryWordSetsUsers = 'SELECT word_set_id FROM tnw2.relation_users_word_sets WHERE user_id=$1';
+    static async factoryLoadForUser(userId: number): Promise<Wordset[]> {
+        const queryWordSetsUsers = 'SELECT * FROM tnw2.relation_users_word_sets LEFT JOIN tnw2.word_sets ON tnw2.relation_users_word_sets.word_set_id=tnw2.word_sets.id WHERE tnw2.relation_users_word_sets.user_id=$1';
+        const result = await queryDatabase(queryWordSetsUsers, [userId]);
 
-        return [new Wordset()];
+        return result.map(({id, title, original_language_id, translated_language_id}) => new Wordset({
+            id, name: title, translated_language_id, original_language_id
+        }));
     }
 }
