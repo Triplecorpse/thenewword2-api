@@ -7,21 +7,30 @@ import {CustomError} from "../models/CustomError";
 export const wordsetRouter = express.Router();
 
 wordsetRouter.post('/add', async (req: Request, res: Response) => {
-    if (!req.user) {
-        res.sendStatus(401);
-    }
-
-    if (req.body.id) {
-        res.status(400).json({type: 'ID_IN_EDIT'});
-    }
-
     try {
+        if (!req.user) {
+            throw new CustomError('USER_NOT_FOUND');
+        }
+
+        if (req.body.id) {
+            throw new CustomError('ID_IN_EDIT');
+        }
+
         const wordset = new Wordset(req.body);
+
         wordset.user = req.user as User;
+
         await wordset.save();
-        res.status(200).json({success: true});
+
+        res.status(200).json(wordset.convertToDto());
     } catch (error) {
-        res.status(400).json(error);
+        if (error.name === 'USER_NOT_FOUND') {
+            res.sendStatus(401);
+        } else if (error.name === 'ID_IN_EDIT') {
+            res.status(400).json(error);
+        } else {
+            res.status(500).json(error);
+        }
     }
 });
 
@@ -80,8 +89,8 @@ wordsetRouter.delete('/remove', async (req: Request, res: Response) => {
             res.sendStatus(401);
         } else if (error.name === 'ID_NOT_EXISTS') {
             res.status(400).json(error);
+        } else {
+            res.status(500).json(error);
         }
-
-        res.status(500).json(error);
     }
 });
