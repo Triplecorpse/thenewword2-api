@@ -29,6 +29,7 @@ export class Word implements ICRUDEntity<IWordDto> {
 
     async save(): Promise<void> {
         let query;
+        let relationUserQuery;
         const params = [
             this.word,
             this.translations,
@@ -46,10 +47,18 @@ export class Word implements ICRUDEntity<IWordDto> {
             query = 'UPDATE tnw2.words SET word=$1, translations=$2, speech_part_id=$3, gender_id=$4, forms=$5, original_language_id=$6, translated_language_id=$7, remarks=$8, user_created_id=$9, stress_letter_index=$10, last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$11';
             params.push(this.dbid);
         } else {
-            query = 'INSERT INTO tnw2.words (word, translations, speech_part_id, gender_id, forms, original_language_id, translated_language_id, remarks, user_created_id, stress_letter_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)';
+            query = 'INSERT INTO tnw2.words (word, translations, speech_part_id, gender_id, forms, original_language_id, translated_language_id, remarks, user_created_id, stress_letter_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id';
+            relationUserQuery = 'INSERT INTO tnw2.relation_words_users SET user_id=$1, word_id = $2';
+        }
+        const result = await queryDatabase(query, params).then();
+
+        this.dbid = result[0].id;
+
+        if (relationUserQuery) {
+            await queryDatabase(relationUserQuery, [this.userCreated?.dbid, this.dbid]);
         }
 
-        return queryDatabase(query, params).then();
+        return await queryDatabase(query, params).then();
     }
 
     async loadFromDB(id: number, filterData?: IWordFilterData, user?: User): Promise<void> {
@@ -126,6 +135,14 @@ export class Word implements ICRUDEntity<IWordDto> {
         return queryDatabase(query, [this.dbid]).then();
     }
 
+    static async subscribeToWordSet(wordId: number, wordSetId: number): Promise<void> {
+        await queryDatabase('INSERT INTO tnw2.relation_words_word_sets SET word_set_id=$1, word_id = $2', [wordSetId, wordId]);
+    }
+
+    static async unsubscribeFromWordSet(wordId: number, wordSetId: number): Promise<void> {
+        await queryDatabase('DELETE FROM tnw2.relation_words_word_sets WHERE word_set_id=$1 AND word_id = $2', [wordSetId, wordId]);
+    }
+
     static async fromDb(id: number): Promise<Word> {
         try {
             const result = await queryDatabase('SELECT * from tnw2.words WHERE id=$1', [id]);
@@ -151,7 +168,9 @@ export class Word implements ICRUDEntity<IWordDto> {
         }
     }
 
-    static async searchByWordsetId(wordSetId: number) {}
+    static async searchByWordSetId(wordSetId: number) {
+        const result = await queryDatabase('SELECT ')
+    }
 
     static async subscribe(wordId: number, userId: number) {
         const query = 'INSERT INTO tnw2.relation_words_users (word_id, user_id) SET ($1, $2)';
