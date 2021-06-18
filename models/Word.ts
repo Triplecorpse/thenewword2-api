@@ -7,11 +7,13 @@ import {Language} from './Language';
 import {ICRUDEntity} from '../interfaces/ICRUDEntity';
 import {IWordFilterData} from '../interfaces/IWordFilterData';
 import {genders, speechParts, languages} from '../const/constData';
+import {CustomError} from "./CustomError";
 
 export class Word implements ICRUDEntity<IWordDto> {
     dbid?: number;
     word?: string;
     translations?: string[];
+    transcription?: string;
     speechPart?: SpeechPart;
     gender?: Gender;
     forms?: string[];
@@ -122,5 +124,44 @@ export class Word implements ICRUDEntity<IWordDto> {
         const query = 'DELETE FROM tnw2.words WHERE id=$1';
 
         return queryDatabase(query, [this.dbid]).then();
+    }
+
+    static async fromDb(id: number): Promise<Word> {
+        try {
+            const result = await queryDatabase('SELECT * from tnw2.words WHERE id=$1', [id]);
+            const foundResult = result[0];
+            const word = new Word();
+
+            word.dbid = foundResult.id;
+            word.word = foundResult.word;
+            word.remarks = foundResult.remarks;
+            word.forms = foundResult.forms;
+            word.translations = foundResult.translations;
+            word.originalLanguage = await Language.fromDb(foundResult.original_language_id);
+            word.translatedLanguage = await Language.fromDb(foundResult.translated_language_id);
+            word.userCreated = await User.fromDb(foundResult.user_created_id);
+            word.transcription = foundResult.transcription;
+            word.stressLetterIndex = foundResult.stressLetterIndex;
+            word.speechPart = await SpeechPart.fromDb(foundResult.speech_part_id);
+            word.gender = await SpeechPart.fromDb(foundResult.gender_id);
+
+            return word;
+        } catch (error) {
+            throw new CustomError('GENERIC_DB_ERROR', error);
+        }
+    }
+
+    static async searchByWordsetId(wordSetId: number) {}
+
+    static async subscribe(wordId: number, userId: number) {
+        const query = 'INSERT INTO tnw2.relation_words_users (word_id, user_id) SET ($1, $2)';
+
+        return queryDatabase(query, [wordId, userId]).then();
+    }
+
+    static async unsubscribe(wordId: number, userId: number) {
+        const query = 'DELETE FROM tnw2.relation_words_users WHERE word_id=$1 AND user_id=$2';
+
+        return queryDatabase(query, [wordId, userId]).then();
     }
 }

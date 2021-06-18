@@ -6,6 +6,7 @@ import {genders, languages, speechParts} from '../const/constData';
 import {User} from '../models/User';
 import {jwtDecode, jwtSign} from '../services/jwt';
 import {IWordDto} from '../interfaces/dto/IWordDto';
+import {CustomError} from "../models/CustomError";
 
 export const wordRouter = express.Router();
 
@@ -104,39 +105,27 @@ wordRouter.put('/edit', async (req: Request, res: Response) => {
 });
 
 wordRouter.delete('/remove', async (req: Request, res: Response) => {
-    if (!req.user) {
-        res.sendStatus(401);
+    try {
+        if (!req.user) {
+            throw new CustomError('USER_NOT_FOUND');
+        }
+
+        if (!req.query.id) {
+            throw new CustomError('ID_NOT_EXISTS');
+        }
+
+        await Word.unsubscribe(+req.query.id, req.user.dbid as number);
+
+        res.json({success: true});
+    } catch(error) {
+        if (error.name === 'USER_NOT_FOUND') {
+            res.sendStatus(401);
+        } else if (error.name === 'ID_NOT_EXISTS') {
+            res.status(400).json(error);
+        }
+
+        res.status(500).json(error);
     }
-
-    if (!req.query.id) {
-        res.status(400).json({type: 'ID_NOT_EXISTS'});
-        throw new Error('ID_NOT_EXISTS');
-    }
-
-    const word = new Word();
-
-    await word.loadFromDB(+req.query.id, {}, req.user)
-        .catch(error => {
-            const err: any = {...error};
-            if (!error?.type) {
-                err.desc = error.message;
-                err.type = 'GENERIC';
-            }
-            res.status(500).json({err});
-            throw error;
-        });
-    await word.remove()
-        .catch(error => {
-            const err: any = {...error};
-            if (!error?.type) {
-                err.desc = error.message;
-                err.type = 'GENERIC';
-            }
-            res.status(500).json({err});
-            throw error;
-        });
-
-    res.status(200).json({success: true});
 });
 
 wordRouter.get('/exercise', async (req: Request, res: Response) => {

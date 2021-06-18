@@ -1,5 +1,4 @@
 import {ICRUDEntity} from "../interfaces/ICRUDEntity";
-import {Word} from "./Word";
 import {IWordSetDto} from "../interfaces/dto/IWordSetDto";
 import {User} from "./User";
 import {CustomError} from "./CustomError";
@@ -12,7 +11,6 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
     name: string = '';
     originalLanguage: Language;
     translatedLanguage: Language;
-    words: Word[] = [];
     user: User;
 
     constructor(wordSetDto?: IWordSetDto) {
@@ -24,7 +22,6 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
     convertToDto(): IWordSetDto {
         return {
             id: this.dbid,
-            words: [],
             name: this.name,
             original_language_id: this.originalLanguage.dbid,
             translated_language_id: this.translatedLanguage.dbid
@@ -46,7 +43,6 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
         this.name = entity.name;
         this.originalLanguage = languages.find(l => l.dbid === entity.original_language_id) as Language;
         this.translatedLanguage = languages.find(l => l.dbid === entity.translated_language_id) as Language;
-        // this.words = entity.words.map(wordDto => new Word(wordDto));
     }
 
     async save(): Promise<void> {
@@ -56,10 +52,9 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
 
         let query;
         let userRelationQuery;
-        let wordRelationQuery;
 
         if (this.dbid) {
-            query = 'UPDATE tnw2.word_sets SET title=$1, original_language_id=$2, translated_language_id=$3 last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$12 RETURNING *';
+            query = 'UPDATE tnw2.word_sets SET title=$1, original_language_id=$2, translated_language_id=$3 last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$5 RETURNING *';
         } else {
             query = 'INSERT INTO tnw2.word_sets (title, original_language_id, translated_language_id, user_created_id) VALUES ($1, $2, $3, $4) RETURNING *';
             userRelationQuery = 'INSERT INTO tnw2.relation_users_word_sets (user_id, word_set_id) VALUES ($1, $2)';
@@ -74,9 +69,35 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
                 await queryDatabase(userRelationQuery, [this.user.dbid, this.dbid]);
             }
         } catch (error) {
-            console.log(error, this.originalLanguage);
             throw new CustomError('SAVE_FAILED', error);
         }
+    }
+
+    static async fromDb(id: number): Promise<Wordset> {
+        try {
+            const query = 'SELECT * FROM tnw2.word_sets WHERE id=$1';
+            const result = await queryDatabase(query, [id]);
+            const foundWordSet = result[0];
+            const wordset = new Wordset();
+            const user = await User.fromDb(foundWordSet.user_created_id);
+            const originalLanguage = await Language.fromDb(foundWordSet.original_language_id);
+            const translatedLanguage = await Language.fromDb(foundWordSet.translated_language_id);
+
+            wordset.dbid = foundWordSet.id;
+            wordset.name = foundWordSet.title;
+            wordset.user = user;
+            wordset.originalLanguage = originalLanguage;
+            wordset.translatedLanguage = translatedLanguage;
+
+            return wordset;
+        } catch (error) {
+            throw new CustomError('GENERIC_DB_ERROR', error);
+        }
+
+    }
+
+    static async patchName(name: string, wordSetId: number): Promise<any/*Wordset*/> {
+        return await queryDatabase('UPDATE tnw2.word_sets SET title=$1, last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$2 RETURNING *', [name, wordSetId]);
     }
 
     static async factoryLoadForUser(userId: number): Promise<Wordset[]> {
@@ -86,5 +107,17 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
         return result.map(({id, title, original_language_id, translated_language_id}) => new Wordset({
             id, name: title, translated_language_id, original_language_id
         }));
+    }
+
+    static async subscribe(wordSetId: number, userId: number) {
+        const query = 'INSERT INTO tnw2.relation_users_word_sets (word_set_id, user_id) SET ($1, $2)';
+
+        return queryDatabase(query, [wordSetId, userId]).then();
+    }
+
+    static async unsubscribe(wordsetId: number, userId: number) {
+        const query = 'DELETE FROM tnw2.relation_users_word_sets WHERE user_id=$1 AND word_set_id=$2';
+
+        return queryDatabase(query, [userId, wordsetId]).then();
     }
 }

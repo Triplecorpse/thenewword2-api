@@ -2,6 +2,7 @@ import {IReadOnlyEntity} from '../interfaces/IReadOnlyEntity';
 import {queryDatabase} from '../services/db';
 import {ILanguage} from '../interfaces/ILanguage';
 import {ILanguageDto} from '../interfaces/dto/IWordMetadataDto';
+import {CustomError} from "./CustomError";
 
 export class Language implements ILanguage, IReadOnlyEntity<ILanguage, ILanguageDto> {
     dbid: number;
@@ -49,5 +50,34 @@ export class Language implements ILanguage, IReadOnlyEntity<ILanguage, ILanguage
             english_name: this.englishName,
             native_name: this.nativeName
         };
+    }
+
+    static fromDto(languageDto: ILanguageDto): Language {
+        const language = new Language();
+
+        language.dbid = languageDto.id;
+        language.rtl = languageDto.rtl;
+        language.iso2 = languageDto.iso2;
+        language.englishName = languageDto.english_name;
+        language.nativeName = languageDto.native_name;
+
+        return language;
+    }
+
+    static async fromDb(id: number): Promise<Language> {
+        try {
+            const result = await queryDatabase('SELECT * from tnw2.languages WHERE id=$1', [id]);
+            const language = new Language();
+
+            language.dbid = result[0].id;
+            language.rtl = result[0].rtl;
+            language.iso2 = result[0].iso2;
+            language.englishName = result[0].english_name;
+            language.nativeName = result[0].native_name;
+
+            return language;
+        } catch (error) {
+            throw new CustomError('GENERIC_DB_ERROR', error)
+        }
     }
 }

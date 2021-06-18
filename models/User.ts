@@ -141,4 +141,24 @@ export class User implements ICRUDEntity<IUserDto> {
             throw new CustomError('GENERIC_DB_ERROR', error);
         }
     }
+
+    static async fromDb(id: number): Promise<User> {
+        try {
+            const result = await queryDatabase('SELECT * FROM tnw2.users WHERE id=$1', [id]);
+            const learningLanguagesIdsResult = await queryDatabase('SELECT language_id as id FROM tnw2.relation_users_learning_language WHERE user_id=$1', [id]);
+            const learningLanguages = await Promise.all(learningLanguagesIdsResult.map(({id}) => Language.fromDb(id)));
+            const user = new User();
+
+            user.dbid = result[0].id;
+            user.login = result[0].login;
+            user.passwordHash = result[0].password;
+            user.email = result[0].email;
+            user.nativeLanguage = await Language.fromDb(result[0].native_language);
+            user.learningLanguages = learningLanguages;
+
+            return user;
+        } catch (error) {
+            throw new CustomError('GENERIC_DB_ERROR', error);
+        }
+    };
 }

@@ -21,6 +21,17 @@ export class SpeechPart implements ISpeechPart, IReadOnlyEntity<ISpeechPart, ISp
         }
     }
 
+    static async fromDb(id: number): Promise<SpeechPart> {
+        const result = await queryDatabase('SELECT * FROM tnw2.speech_parts WHERE id=$1', [id]);
+        const foundResult = result[0];
+        const speechPart = new SpeechPart();
+
+        speechPart.dbid = foundResult.id;
+        speechPart.englishName = foundResult.title;
+
+        return speechPart;
+    }
+
     convertToDto(): ISpeechPartDto {
         return {
             name: this.englishName,

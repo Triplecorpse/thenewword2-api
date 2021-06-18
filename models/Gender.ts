@@ -21,6 +21,17 @@ export class Gender implements IGender, IReadOnlyEntity<IGender, IGenderDto> {
         }
     }
 
+    static async fromDb(id: number): Promise<Gender> {
+        const result = await queryDatabase('SELECT * FROM tnw2.genders WHERE id=$1', [id]);
+        const foundResult = result[0];
+        const gender = new Gender();
+
+        gender.dbid = foundResult.id;
+        gender.englishName = foundResult.title;
+
+        return gender;
+    }
+
     convertToDto(): IGenderDto {
         return {
             id: this.dbid,
