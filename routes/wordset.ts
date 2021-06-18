@@ -31,9 +31,9 @@ wordsetRouter.put('/edit', async (req: Request, res: Response) => {
             throw new CustomError('USER_NOT_FOUND')
         }
 
-        await Wordset.patchName(req.body.name, req.body.id);
+        const wordset = await Wordset.patchName(req.body.name, req.body.id);
 
-        res.json({success: true});
+        res.json(wordset.convertToDto());
     } catch (error) {
         if (error.name === 'USER_NOT_FOUND') {
             res.status(401).json(error);

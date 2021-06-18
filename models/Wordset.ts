@@ -96,8 +96,10 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
 
     }
 
-    static async patchName(name: string, wordSetId: number): Promise<any/*Wordset*/> {
-        return await queryDatabase('UPDATE tnw2.word_sets SET title=$1, last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$2 RETURNING *', [name, wordSetId]);
+    static async patchName(name: string, wordSetId: number): Promise<Wordset> {
+        const result = await queryDatabase('UPDATE tnw2.word_sets SET title=$1, last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$2 RETURNING id', [name, wordSetId]);
+
+        return Wordset.fromDb(result[0].id);
     }
 
     static async factoryLoadForUser(userId: number): Promise<Wordset[]> {
