@@ -150,8 +150,6 @@ export class Word implements ICRUDEntity<IWordDto> {
             const foundResult = result[0];
             const word = new Word();
 
-            console.log(foundResult);
-
             word.dbid = foundResult.id;
             word.word = foundResult.word;
             word.remarks = foundResult.remarks;

@@ -19,26 +19,30 @@ export class Language implements ILanguage, IReadOnlyEntity<ILanguage, ILanguage
         }
     }
 
-    async loadFromDb(idOrIso2?: number | string) {
-        let query = 'SELECT id, iso2, english_name, native_name, rtl FROM tnw2.languages WHERE ';
-        let param: number | string = '';
+async loadFromDb(idOrIso2?: number | string) {
+        try {
+            let query = 'SELECT id, iso2, english_name, native_name, rtl FROM tnw2.languages WHERE ';
+            let param: number | string = '';
 
-        if (typeof idOrIso2 === 'number' || this.dbid) {
-            query += 'id = $1';
-            param = idOrIso2 || this.dbid;
-        } else if (typeof idOrIso2 === 'string' || this.iso2) {
-            query += 'iso2 = $1';
-            param = idOrIso2 || this.iso2;
-        }
+            if (typeof idOrIso2 === 'number' || this.dbid) {
+                query += 'id = $1';
+                param = idOrIso2 || this.dbid;
+            } else if (typeof idOrIso2 === 'string' || this.iso2) {
+                query += 'iso2 = $1';
+                param = idOrIso2 || this.iso2;
+            }
 
-        const result = await queryDatabase(query, [param]);
+            const result = await queryDatabase(query, [param]);
 
-        if (result?.length) {
-            this.dbid = result[0].id;
-            this.iso2 = result[0].iso2;
-            this.englishName = result[0].english_name;
-            this.nativeName = result[0].native_name;
-            this.rtl = result[0].rtl;
+            if (result?.length) {
+                this.dbid = result[0].id;
+                this.iso2 = result[0].iso2;
+                this.englishName = result[0].english_name;
+                this.nativeName = result[0].native_name;
+                this.rtl = result[0].rtl;
+            }
+        } catch (error) {
+            throw new CustomError('GENERIC_DB_ERROR', error)
         }
     }
 

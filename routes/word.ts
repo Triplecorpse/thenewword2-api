@@ -51,9 +51,9 @@ wordRouter.get('/get', async (req: Request, res: Response) => {
 
         let words;
 
-        const filterData: IWordFilterData = req.body.filter;
+        const filterData: IWordFilterData = req.query;
 
-        if (filterData.word_set_id) {
+        if (filterData?.word_set_id) {
             words = await Word.searchByWordSetId(filterData.word_set_id);
         } else {
             words = await Word.searchByUserId(req.user.dbid as number);

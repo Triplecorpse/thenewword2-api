@@ -1,6 +1,6 @@
-import {Pool} from 'pg';
+import {Pool, PoolClient} from 'pg';
 import * as dotenv from 'dotenv';
-import {CustomError} from "../models/CustomError";
+import {CustomError} from '../models/CustomError';
 
 dotenv.config();
 
@@ -12,8 +12,12 @@ const pool = new Pool({
     port: Number(process.env.PGPORT)
 });
 
-export async function connectToDatabase() {
-    return await pool.connect();
+export async function connectToDatabase(): Promise<PoolClient> {
+    try {
+        return await pool.connect();
+    } catch (error) {
+        throw new CustomError('GENERIC_DB_ERROR', error);
+    }
 }
 
 export async function queryDatabase<T = any, K = any>(query: string, params?: K[]): Promise<T[]> {
