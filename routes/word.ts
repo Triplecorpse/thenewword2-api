@@ -49,10 +49,15 @@ wordRouter.get('/get', async (req: Request, res: Response) => {
             throw new CustomError('USER_NOT_FOUND');
         }
 
-        const filterData: IWordFilterData = req.body.filter;
-        const words = await Word.searchByUserId(req.user.dbid as number, filterData);
+        let words;
 
-        console.log(words);
+        const filterData: IWordFilterData = req.body.filter;
+
+        if (filterData.word_set_id) {
+            words = await Word.searchByWordSetId(filterData.word_set_id);
+        } else {
+            words = await Word.searchByUserId(req.user.dbid as number);
+        }
 
         res.send(words.map(word => word.convertToDto()));
     } catch (error) {

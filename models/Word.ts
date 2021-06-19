@@ -178,13 +178,17 @@ export class Word implements ICRUDEntity<IWordDto> {
     }
 
     static async searchByWordSetId(wordSetId: number): Promise<Word[]> {
-        const result = await queryDatabase('SELECT word_id AS id FROM tnw2.relation_words_word_sets WHERE word_set_id=$1', [wordSetId]);
-        const words$ = result.map(({id}) => Word.fromDb(id));
+        try {
+            const result = await queryDatabase('SELECT word_id AS id FROM tnw2.relation_words_word_sets WHERE word_set_id=$1', [wordSetId]);
+            const words$ = result.map(({id}) => Word.fromDb(id));
 
-        return await Promise.all(words$)
+            return Promise.all(words$);
+        } catch (error) {
+            throw new CustomError('GENERIC_DB_ERROR', error);
+        }
     }
 
-    static async searchByUserId(userId: number, filterData?: IWordFilterData): Promise<Word[]> {
+    static async searchByUserId(userId: number): Promise<Word[]> {
         try {
             const result = await queryDatabase('SELECT word_id AS id FROM tnw2.relation_words_users WHERE user_id=$1', [userId]);
             const words$ = result.map(({id}) => Word.fromDb(id));
@@ -206,10 +210,4 @@ export class Word implements ICRUDEntity<IWordDto> {
 
         return queryDatabase(query, [wordId, userId]).then();
     }
-
-    // static creteQueryFromFilter(filter: IWordFilterData): {query: string, params: []} {
-    //     const query = '';
-    //     const params = [];
-    //     return {query, params};
-    // }
 }
