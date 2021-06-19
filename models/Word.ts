@@ -62,6 +62,22 @@ export class Word implements ICRUDEntity<IWordDto> {
         return await queryDatabase(query, params).then();
     }
 
+    async saveToWordSet(wordsetId: number): Promise<void> {
+        try {
+            await queryDatabase('INSERT INTO tnw2.relation_words_word_sets (word_set_id, word_id) VALUES ($1, $2)', [wordsetId, this.dbid]);
+        } catch (error) {
+            throw new CustomError('GENERIC_DB_ERROR', error);
+        }
+    }
+
+    async removeFromWordSet(wordsetId: number): Promise<void> {
+        try {
+            await queryDatabase('DELETE FROM tnw2.relation_words_word_sets WHERE word_set_id=$1 AND word_id=$2', [wordsetId, this.dbid]);
+        } catch (error) {
+            throw new CustomError('GENERIC_DB_ERROR', error);
+        }
+    }
+
     async loadFromDB(id: number, filterData?: IWordFilterData, user?: User): Promise<void> {
         const queryPart = this.createFilterDataSubquery(filterData);
         const query = 'SELECT id, word, translations, forms, remarks, stress_letter_index, speech_part, gender, original_language, translated_language FROM tnw2.words WHERE id = $1' + queryPart.queryPart;

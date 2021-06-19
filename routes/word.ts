@@ -31,6 +31,11 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
 
         const word = new Word(req.body, req.user);
         await word.save()
+
+        if (req.body.word_set_id) {
+            await word.saveToWordSet(req.body.word_set_id);
+        }
+
         res.status(201).json(word.convertToDto());
     } catch (error) {
         if (error.name === 'USER_NOT_FOUND') {
