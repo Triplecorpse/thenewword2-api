@@ -1,5 +1,6 @@
 import {Pool} from 'pg';
 import * as dotenv from 'dotenv';
+import {CustomError} from "../models/CustomError";
 
 dotenv.config();
 
@@ -16,5 +17,9 @@ export async function connectToDatabase() {
 }
 
 export async function queryDatabase<T = any, K = any>(query: string, params?: K[]): Promise<T[]> {
-    return pool.query(query, params).then(({rows}) => rows);
+    try {
+        return pool.query(query, params).then(({rows}) => rows);
+    } catch (error) {
+        throw new CustomError('QUERY_ERROR', {query, params, error});
+    }
 }

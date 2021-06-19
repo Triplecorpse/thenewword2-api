@@ -1,8 +1,8 @@
 import * as express from 'express';
 import {Request, Response} from 'express';
-import {Wordset} from "../models/Wordset";
-import {User} from "../models/User";
-import {CustomError} from "../models/CustomError";
+import {Wordset} from '../models/Wordset';
+import {User} from '../models/User';
+import {CustomError} from '../models/CustomError';
 
 export const wordsetRouter = express.Router();
 
@@ -22,7 +22,7 @@ wordsetRouter.post('/add', async (req: Request, res: Response) => {
 
         await wordset.save();
 
-        res.status(200).json(wordset.convertToDto());
+        res.status(201).json(wordset.convertToDto());
     } catch (error) {
         if (error.name === 'USER_NOT_FOUND') {
             res.sendStatus(401);
@@ -59,7 +59,6 @@ wordsetRouter.get('/get', async (req: Request, res: Response) => {
         }
 
         const wordsets = await Wordset.factoryLoadForUser(req.user?.dbid as number);
-        await Wordset.fromDb(1);
 
         res.json(wordsets.map(w => w.convertToDto()));
     } catch (error) {

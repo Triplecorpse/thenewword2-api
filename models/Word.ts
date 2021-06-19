@@ -7,7 +7,7 @@ import {Language} from './Language';
 import {ICRUDEntity} from '../interfaces/ICRUDEntity';
 import {IWordFilterData} from '../interfaces/IWordFilterData';
 import {genders, speechParts, languages} from '../const/constData';
-import {CustomError} from "./CustomError";
+import {CustomError} from './CustomError';
 
 export class Word implements ICRUDEntity<IWordDto> {
     dbid?: number;
@@ -48,8 +48,9 @@ export class Word implements ICRUDEntity<IWordDto> {
             params.push(this.dbid);
         } else {
             query = 'INSERT INTO tnw2.words (word, translations, speech_part_id, gender_id, forms, original_language_id, translated_language_id, remarks, user_created_id, stress_letter_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id';
-            relationUserQuery = 'INSERT INTO tnw2.relation_words_users SET user_id=$1, word_id = $2';
+            relationUserQuery = 'INSERT INTO tnw2.relation_words_users (user_id, word_id) VALUES ($1, $2)';
         }
+
         const result = await queryDatabase(query, params).then();
 
         this.dbid = result[0].id;
@@ -149,6 +150,8 @@ export class Word implements ICRUDEntity<IWordDto> {
             const foundResult = result[0];
             const word = new Word();
 
+            console.log(foundResult);
+
             word.dbid = foundResult.id;
             word.word = foundResult.word;
             word.remarks = foundResult.remarks;
@@ -159,8 +162,14 @@ export class Word implements ICRUDEntity<IWordDto> {
             word.userCreated = await User.fromDb(foundResult.user_created_id);
             word.transcription = foundResult.transcription;
             word.stressLetterIndex = foundResult.stressLetterIndex;
-            word.speechPart = await SpeechPart.fromDb(foundResult.speech_part_id);
-            word.gender = await SpeechPart.fromDb(foundResult.gender_id);
+
+            if (foundResult.speech_part_id) {
+                word.speechPart = await SpeechPart.fromDb(foundResult.speech_part_id);
+            }
+
+            if (foundResult.gender_id) {
+                word.gender = await Gender.fromDb(foundResult.gender_id);
+            }
 
             return word;
         } catch (error) {
@@ -168,8 +177,22 @@ export class Word implements ICRUDEntity<IWordDto> {
         }
     }
 
-    static async searchByWordSetId(wordSetId: number) {
-        const result = await queryDatabase('SELECT ')
+    static async searchByWordSetId(wordSetId: number): Promise<Word[]> {
+        const result = await queryDatabase('SELECT word_id AS id FROM tnw2.relation_words_word_sets WHERE word_set_id=$1', [wordSetId]);
+        const words$ = result.map(({id}) => Word.fromDb(id));
+
+        return await Promise.all(words$)
+    }
+
+    static async searchByUserId(userId: number, filterData?: IWordFilterData): Promise<Word[]> {
+        try {
+            const result = await queryDatabase('SELECT word_id AS id FROM tnw2.relation_words_users WHERE user_id=$1', [userId]);
+            const words$ = result.map(({id}) => Word.fromDb(id));
+
+            return Promise.all(words$);
+        } catch (error) {
+            throw new CustomError('GENERIC_DB_ERROR', error);
+        }
     }
 
     static async subscribe(wordId: number, userId: number) {
@@ -183,4 +206,10 @@ export class Word implements ICRUDEntity<IWordDto> {
 
         return queryDatabase(query, [wordId, userId]).then();
     }
+
+    // static creteQueryFromFilter(filter: IWordFilterData): {query: string, params: []} {
+    //     const query = '';
+    //     const params = [];
+    //     return {query, params};
+    // }
 }

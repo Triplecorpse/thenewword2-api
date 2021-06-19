@@ -6,7 +6,8 @@ import {genders, languages, speechParts} from '../const/constData';
 import {User} from '../models/User';
 import {jwtDecode, jwtSign} from '../services/jwt';
 import {IWordDto} from '../interfaces/dto/IWordDto';
-import {CustomError} from "../models/CustomError";
+import {CustomError} from '../models/CustomError';
+import {IWordFilterData} from '../interfaces/IWordFilterData';
 
 export const wordRouter = express.Router();
 
@@ -19,53 +20,53 @@ wordRouter.get('/metadata', (req: Request, res: Response) => {
 });
 
 wordRouter.post('/add', async (req: Request, res: Response) => {
-    if (!req.user) {
-        res.sendStatus(401);
+    try {
+        if (!req.user) {
+            throw new CustomError('USER_NOT_FOUND');
+        }
+
+        if (req.body.id) {
+            throw new CustomError('ID_IN_EDIT');
+        }
+
+        const word = new Word(req.body, req.user);
+        await word.save()
+        res.status(201).json(word.convertToDto());
+    } catch (error) {
+        if (error.name === 'USER_NOT_FOUND') {
+            res.sendStatus(401);
+        } else if (error.name === 'ID_IN_EDIT') {
+            res.status(400).json(error);
+        } else {
+            res.status(500).json(error);
+        }
     }
-
-    if (req.body.id) {
-        res.status(400).json({type: 'ID_IN_EDIT'});
-        throw new Error('ID_IN_EDIT');
-    }
-
-    const word = new Word(req.body, req.user);
-
-    await word.save()
-        .catch(error => {
-            const err: any = {...error};
-            if (!error?.type) {
-                err.desc = error.message;
-                err.type = 'GENERIC';
-            }
-            res.status(500).json({err});
-            throw error;
-        });
-
-    res.status(201).json({success: true});
 });
 
 wordRouter.get('/get', async (req: Request, res: Response) => {
+    try {
+        if (!req.user) {
+            throw new CustomError('USER_NOT_FOUND');
+        }
+
+        const filterData: IWordFilterData = req.body.filter;
+        const words = await Word.searchByUserId(req.user.dbid as number, filterData);
+
+        console.log(words);
+
+        res.send(words.map(word => word.convertToDto()));
+    } catch (error) {
+        if (error.name === 'USER_NOT_FOUND') {
+            res.sendStatus(401);
+        } else if (error.name === 'ID_IN_EDIT') {
+            res.status(400).json(error);
+        } else {
+            res.status(500).json(error);
+        }
+    }
     if (!req.user) {
         res.sendStatus(401);
     }
-
-    const query = 'SELECT id FROM tnw2.words WHERE user_created_id = $1';
-    const wordIds: { id: number }[] = await queryDatabase<{ id: number }>(query, [req.user?.dbid])
-        .catch(error => {
-            const err: any = {...error};
-            if (!error?.type) {
-                err.desc = error.message;
-                err.type = 'GENERIC';
-            }
-            res.status(500).json({err});
-            throw error;
-        });
-    const words = wordIds.map(() => new Word(undefined, req.user));
-    const words$ = wordIds.map(({id}, index) => words[index].loadFromDB(id));
-
-    await Promise.all(words$);
-
-    res.send(words.map(word => word.convertToDto()));
 });
 
 wordRouter.put('/edit', async (req: Request, res: Response) => {
