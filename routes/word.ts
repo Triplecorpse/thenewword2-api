@@ -74,45 +74,31 @@ wordRouter.get('/get', async (req: Request, res: Response) => {
             res.status(500).json(error);
         }
     }
-    if (!req.user) {
-        res.sendStatus(401);
-    }
 });
 
 wordRouter.put('/edit', async (req: Request, res: Response) => {
-    if (!req.user) {
-        res.sendStatus(401);
+    try {
+        if (!req.user) {
+            throw new CustomError('USER_NOT_FOUND');
+        }
+
+        if (!req.body.id) {
+            throw new CustomError('ID_NOT_EXISTS');
+        }
+
+        const word = await Word.fromDb(req.body.id);
+        word.replaceWith(req.body);
+        await word.save();
+        res.status(200).json(word.convertToDto());
+    } catch (error) {
+        if (error.name === 'USER_NOT_FOUND') {
+            res.sendStatus(401);
+        } else if (error.name === 'ID_NOT_EXISTS') {
+            res.status(400).json(error);
+        } else {
+            res.status(500).json(error);
+        }
     }
-
-    if (!req.body.id) {
-        res.status(400).json({type: 'ID_REQUIRED'});
-        throw new Error('ID_NOT_EXISTS');
-    }
-
-    const word = new Word();
-    await word.loadFromDB(req.body.id, {}, req.user)
-        .catch(error => {
-            const err: any = {...error};
-            if (!error?.type) {
-                err.desc = error.message;
-                err.type = 'GENERIC';
-            }
-            res.status(500).json({err});
-            throw error;
-        });
-    word.replaceWith(req.body);
-    await word.save()
-        .catch(error => {
-            const err: any = {...error};
-            if (!error?.type) {
-                err.desc = error.message;
-                err.type = 'GENERIC';
-            }
-            res.status(500).json({err});
-            throw error;
-        });
-
-    res.status(200).json({success: true});
 });
 
 wordRouter.delete('/remove', async (req: Request, res: Response) => {

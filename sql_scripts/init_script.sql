@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS tnw2.words (
     word text NOT NULL CHECK(word != ''),
     translations text[] NOT NULL,
     transcription text,
-    speech_part_id smallint REFERENCES tnw2.speech_parts(id) NOT NULL,
+    speech_part_id smallint REFERENCES tnw2.speech_parts(id),
     gender_id smallint REFERENCES tnw2.genders(id),
     forms text[],
     original_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,

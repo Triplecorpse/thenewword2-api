@@ -28,38 +28,43 @@ export class Word implements ICRUDEntity<IWordDto> {
     }
 
     async save(): Promise<void> {
-        let query;
-        let relationUserQuery;
-        const params = [
-            this.word,
-            this.translations,
-            this.speechPart?.dbid,
-            this.gender?.dbid,
-            this.forms,
-            this.originalLanguage?.dbid,
-            this.translatedLanguage?.dbid,
-            this.remarks as string,
-            this.userCreated?.dbid,
-            this.stressLetterIndex
-        ];
+        try {
 
-        if (this.dbid) {
-            query = 'UPDATE tnw2.words SET word=$1, translations=$2, speech_part_id=$3, gender_id=$4, forms=$5, original_language_id=$6, translated_language_id=$7, remarks=$8, user_created_id=$9, stress_letter_index=$10, last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$11';
-            params.push(this.dbid);
-        } else {
-            query = 'INSERT INTO tnw2.words (word, translations, speech_part_id, gender_id, forms, original_language_id, translated_language_id, remarks, user_created_id, stress_letter_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id';
-            relationUserQuery = 'INSERT INTO tnw2.relation_words_users (user_id, word_id) VALUES ($1, $2)';
+            let query;
+            let relationUserQuery;
+            const params = [
+                this.word,
+                this.translations,
+                this.speechPart?.dbid,
+                this.gender?.dbid,
+                this.forms,
+                this.originalLanguage?.dbid,
+                this.translatedLanguage?.dbid,
+                this.remarks as string,
+                this.userCreated?.dbid,
+                this.stressLetterIndex
+            ];
+
+            if (this.dbid) {
+                query = 'UPDATE tnw2.words SET word=$1, translations=$2, speech_part_id=$3, gender_id=$4, forms=$5, original_language_id=$6, translated_language_id=$7, remarks=$8, user_created_id=$9, stress_letter_index=$10, last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$11 RETURNING id';
+                params.push(this.dbid);
+            } else {
+                query = 'INSERT INTO tnw2.words (word, translations, speech_part_id, gender_id, forms, original_language_id, translated_language_id, remarks, user_created_id, stress_letter_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id';
+                relationUserQuery = 'INSERT INTO tnw2.relation_words_users (user_id, word_id) VALUES ($1, $2)';
+            }
+
+            const result = await queryDatabase(query, params);
+
+            this.dbid = result[0].id;
+
+            if (relationUserQuery) {
+                await queryDatabase(relationUserQuery, [this.userCreated?.dbid, this.dbid]);
+            }
+
+            return await queryDatabase(query, params).then();
+        } catch (error) {
+            throw new CustomError('SAVE_FAILED', error);
         }
-
-        const result = await queryDatabase(query, params).then();
-
-        this.dbid = result[0].id;
-
-        if (relationUserQuery) {
-            await queryDatabase(relationUserQuery, [this.userCreated?.dbid, this.dbid]);
-        }
-
-        return await queryDatabase(query, params).then();
     }
 
     async saveToWordSet(wordsetId: number): Promise<void> {
@@ -175,7 +180,7 @@ export class Word implements ICRUDEntity<IWordDto> {
             word.translatedLanguage = await Language.fromDb(foundResult.translated_language_id);
             word.userCreated = await User.fromDb(foundResult.user_created_id);
             word.transcription = foundResult.transcription;
-            word.stressLetterIndex = foundResult.stressLetterIndex;
+            word.stressLetterIndex = foundResult.stress_letter_index;
 
             if (foundResult.speech_part_id) {
                 word.speechPart = await SpeechPart.fromDb(foundResult.speech_part_id);
