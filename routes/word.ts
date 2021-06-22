@@ -135,7 +135,7 @@ wordRouter.get('/exercise', async (req: Request, res: Response) => {
             limit: +(req.query.limit as string),
             language: +(req.query.language as string),
             threshold: +(req.query.threshold as string)
-        });
+        }, req.user.dbid as number);
 
         res.json(words.map(word => word.convertToDto()));
     } catch (error) {

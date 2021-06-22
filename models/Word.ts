@@ -237,9 +237,11 @@ export class Word implements ICRUDEntity<IWordDto> {
         return queryDatabase(query, [wordId, userId]).then();
     }
 
-    static async getWordsToExercise(filter: IFilterFormValue): Promise<Word[]> {
+    static async getWordsToExercise(filter: IFilterFormValue, userId: number): Promise<Word[]> {
         try {
-            let filterByWordsetResult = [];
+            let filterByWordsetResult: any[] = [];
+            let filterByLanguageResult: any[] = [];
+            let overAllResult = [];
 
             if (filter.wordset.length) {
                 let $n: string[] = [];
@@ -252,10 +254,18 @@ export class Word implements ICRUDEntity<IWordDto> {
 
                 filterByWordsetResult = await queryDatabase(`SELECT word_id from tnw2.relation_words_word_sets WHERE word_set_id IN ${queryPart} ORDER BY random() LIMIT $${filter.wordset.length + 1}`, [...filter.wordset, filter.limit]);
                 filterByWordsetResult = filterByWordsetResult.map(({word_id}) => word_id);
+
+                return Promise.all(filterByWordsetResult.map(id => Word.fromDb(id)));
             }
 
-            return Promise.all(filterByWordsetResult.map(id => Word.fromDb(id)));
+            filterByLanguageResult = await queryDatabase('SELECT tnw2.relation_words_users.word_id FROM tnw2.relation_words_users LEFT JOIN tnw2.words ON tnw2.relation_words_users.word_id=tnw2.words.id WHERE tnw2.words.original_language_id=$1 AND tnw2.relation_words_users.user_id=$2 ORDER BY random() LIMIT $3', [filter.language, userId, filter.limit]);
+            filterByLanguageResult = filterByLanguageResult.map(({word_id}) => word_id);
+
+            overAllResult = [...new Set([...filterByWordsetResult, ...filterByLanguageResult])];
+
+            return Promise.all(overAllResult.map(id => Word.fromDb(id)));
         } catch (error) {
+            console.log(error);
             throw new CustomError('GET_WORDS_ERROR', error);
         }
     }
