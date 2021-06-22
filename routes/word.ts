@@ -126,6 +126,15 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
 });
 
 wordRouter.get('/exercise', async (req: Request, res: Response) => {
+    try {
+        if (!req.user) {
+            throw new CustomError('USER_NOT_FOUND');
+        }
+    } catch (error) {
+        if (error.name === 'USER_NOT_FOUND') {
+            res.sendStatus(401);
+        }
+    }
     if (!req.user) {
         res.sendStatus(401);
     }
