@@ -265,7 +265,6 @@ export class Word implements ICRUDEntity<IWordDto> {
 
             return Promise.all(overAllResult.map(id => Word.fromDb(id)));
         } catch (error) {
-            console.log(error);
             throw new CustomError('GET_WORDS_ERROR', error);
         }
     }
