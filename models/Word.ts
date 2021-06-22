@@ -9,6 +9,13 @@ import {IWordFilterData} from '../interfaces/IWordFilterData';
 import {genders, speechParts, languages} from '../const/constData';
 import {CustomError} from './CustomError';
 
+export interface IFilterFormValue {
+    wordset: number[];
+    language: number;
+    threshold: number;
+    limit: number;
+}
+
 export class Word implements ICRUDEntity<IWordDto> {
     dbid?: number;
     word?: string;
@@ -192,7 +199,7 @@ export class Word implements ICRUDEntity<IWordDto> {
 
             return word;
         } catch (error) {
-            throw new CustomError('GENERIC_DB_ERROR', error);
+            throw new CustomError('GET_WORDS_ERROR', error);
         }
     }
 
@@ -203,7 +210,7 @@ export class Word implements ICRUDEntity<IWordDto> {
 
             return Promise.all(words$);
         } catch (error) {
-            throw new CustomError('GENERIC_DB_ERROR', error);
+            throw new CustomError('GET_WORDS_ERROR', error);
         }
     }
 
@@ -214,7 +221,7 @@ export class Word implements ICRUDEntity<IWordDto> {
 
             return Promise.all(words$);
         } catch (error) {
-            throw new CustomError('GENERIC_DB_ERROR', error);
+            throw new CustomError('GET_WORDS_ERROR', error);
         }
     }
 
@@ -228,5 +235,28 @@ export class Word implements ICRUDEntity<IWordDto> {
         const query = 'DELETE FROM tnw2.relation_words_users WHERE word_id=$1 AND user_id=$2';
 
         return queryDatabase(query, [wordId, userId]).then();
+    }
+
+    static async getWordsToExercise(filter: IFilterFormValue): Promise<Word[]> {
+        try {
+            let filterByWordsetResult = [];
+
+            if (filter.wordset.length) {
+                let $n: string[] = [];
+
+                filter.wordset.forEach((ws_id, index) => {
+                    $n.push(`$${index + 1}`);
+                })
+
+                const queryPart = `(${$n.join(',')})`;
+
+                filterByWordsetResult = await queryDatabase(`SELECT word_id from tnw2.relation_words_word_sets WHERE word_set_id IN ${queryPart} ORDER BY random() LIMIT $${filter.wordset.length + 1}`, [...filter.wordset, filter.limit]);
+                filterByWordsetResult = filterByWordsetResult.map(({word_id}) => word_id);
+            }
+
+            return Promise.all(filterByWordsetResult.map(id => Word.fromDb(id)));
+        } catch (error) {
+            throw new CustomError('GET_WORDS_ERROR', error);
+        }
     }
 }

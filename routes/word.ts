@@ -114,7 +114,7 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
         await Word.unsubscribe(+req.query.id, req.user.dbid as number);
 
         res.json({success: true});
-    } catch(error) {
+    } catch (error) {
         if (error.name === 'USER_NOT_FOUND') {
             res.sendStatus(401);
         } else if (error.name === 'ID_NOT_EXISTS') {
@@ -130,45 +130,21 @@ wordRouter.get('/exercise', async (req: Request, res: Response) => {
         if (!req.user) {
             throw new CustomError('USER_NOT_FOUND');
         }
+        const words = await Word.getWordsToExercise({
+            wordset: req.query.wordset ? (req.query.wordset as string).split(',').map(ws => +ws) : [],
+            limit: +(req.query.limit as string),
+            language: +(req.query.language as string),
+            threshold: +(req.query.threshold as string)
+        });
+
+        res.json(words.map(word => word.convertToDto()));
     } catch (error) {
         if (error.name === 'USER_NOT_FOUND') {
             res.sendStatus(401);
+        } else {
+            res.status(500).json(error);
         }
     }
-    if (!req.user) {
-        res.sendStatus(401);
-    }
-
-    const query = 'SELECT id FROM tnw2.words WHERE user_created_id = $1 ORDER BY random() LIMIT 10';
-    const words = await getWordsByQuery(query, [req.user?.dbid], req.user as User)
-        .catch(error => {
-            const err: any = {...error};
-            if (!error?.type) {
-                err.desc = error.message;
-                err.type = 'GENERIC';
-            }
-            res.status(500).json({err});
-            throw error;
-        });
-    const wordsDto = words.map(word => word.convertToDto());
-    const encoded = await jwtSign(JSON.stringify(wordsDto))
-        .catch(error => {
-            const err: any = {...error};
-            if (!error?.type) {
-                err.desc = error.message;
-                err.type = 'JWT_ERROR';
-            }
-            res.status(500).json({err});
-            throw error;
-        });
-    const wordsToSend = wordsDto
-        .map(word => {
-            delete word?.word;
-
-            return word;
-        });
-
-    res.json({words: wordsToSend, encoded});
 });
 
 wordRouter.post('/exercise', async (req: Request, res: Response) => {
