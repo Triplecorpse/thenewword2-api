@@ -12,6 +12,7 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
     originalLanguage: Language;
     translatedLanguage: Language;
     user: User;
+    wordsCount?: number;
 
     constructor(wordSetDto?: IWordSetDto) {
         if (wordSetDto) {
@@ -24,7 +25,8 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
             id: this.dbid,
             name: this.name,
             original_language_id: this.originalLanguage.dbid,
-            translated_language_id: this.translatedLanguage.dbid
+            translated_language_id: this.translatedLanguage.dbid,
+            words_count: this.wordsCount
         };
     }
 
@@ -43,6 +45,7 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
         this.name = entity.name;
         this.originalLanguage = languages.find(l => l.dbid === entity.original_language_id) as Language;
         this.translatedLanguage = languages.find(l => l.dbid === entity.translated_language_id) as Language;
+        this.wordsCount = entity.words_count;
     }
 
     async save(): Promise<void> {
@@ -75,8 +78,7 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
 
     static async fromDb(id: number): Promise<Wordset> {
         try {
-            const query = 'SELECT * FROM tnw2.word_sets WHERE id=$1';
-            const result = await queryDatabase(query, [id]);
+            const result = await queryDatabase('SELECT * FROM tnw2.word_sets WHERE id=$1', [id]);
             const foundWordSet = result[0];
             const wordset = new Wordset();
             const user = await User.fromDb(foundWordSet.user_created_id);
@@ -89,9 +91,13 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
             wordset.originalLanguage = originalLanguage;
             wordset.translatedLanguage = translatedLanguage;
 
+            const wordCount = await queryDatabase('SELECT count(*) FROM tnw2.relation_words_word_sets WHERE word_set_id=$1',[wordset.dbid]);
+
+            wordset.wordsCount = +wordCount[0].count;
+
             return wordset;
         } catch (error) {
-            throw new CustomError('GENERIC_DB_ERROR', error);
+            throw new CustomError('GET_WORDSETS_ERROR', error);
         }
 
     }
@@ -103,12 +109,14 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
     }
 
     static async factoryLoadForUser(userId: number): Promise<Wordset[]> {
-        const queryWordSetsUsers = 'SELECT * FROM tnw2.relation_users_word_sets LEFT JOIN tnw2.word_sets ON tnw2.relation_users_word_sets.word_set_id=tnw2.word_sets.id WHERE tnw2.relation_users_word_sets.user_id=$1';
-        const result = await queryDatabase(queryWordSetsUsers, [userId]);
+        try {
+            const queryResult = await queryDatabase('SELECT id FROM tnw2.relation_users_word_sets LEFT JOIN tnw2.word_sets ON tnw2.relation_users_word_sets.word_set_id=tnw2.word_sets.id WHERE tnw2.relation_users_word_sets.user_id=$1', [userId]);
+            const result = queryResult.map(({id}) => Wordset.fromDb(id));
 
-        return result.map(({id, title, original_language_id, translated_language_id}) => new Wordset({
-            id, name: title, translated_language_id, original_language_id
-        }));
+            return Promise.all(result);
+        } catch (error) {
+            throw new CustomError('GET_WORDSETS_ERROR', error)
+        }
     }
 
     static async subscribe(wordSetId: number, userId: number) {
