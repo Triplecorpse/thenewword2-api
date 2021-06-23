@@ -4,10 +4,12 @@ import {queryDatabase} from '../services/db';
 import {Word} from '../models/Word';
 import {genders, languages, speechParts} from '../const/constData';
 import {User} from '../models/User';
-import {jwtDecode, jwtSign} from '../services/jwt';
+import {jwtDecode} from '../services/jwt';
 import {IWordDto} from '../interfaces/dto/IWordDto';
 import {CustomError} from '../models/CustomError';
 import {IWordFilterData} from '../interfaces/IWordFilterData';
+import {IWordCheckDto} from "../interfaces/dto/IWordCheckDto";
+import * as Diff from 'diff';
 
 export const wordRouter = express.Router();
 
@@ -119,9 +121,9 @@ wordRouter.delete('/remove', async (req: Request, res: Response) => {
             res.sendStatus(401);
         } else if (error.name === 'ID_NOT_EXISTS') {
             res.status(400).json(error);
+        } else {
+            res.status(500).json(error);
         }
-
-        res.status(500).json(error);
     }
 });
 
@@ -148,12 +150,39 @@ wordRouter.get('/exercise', async (req: Request, res: Response) => {
 });
 
 wordRouter.post('/exercise', async (req: Request, res: Response) => {
-    if (!req.user) {
-        res.sendStatus(401);
-    }
+    try {
+        if (!req.user) {
+            throw new CustomError('USER_NOT_FOUND')
+        }
 
-    if (!req.body.encoded) {
-        res.status(400).json({type: 'ENCODED_REQUIRED'});
+        if (!req.body.word) {
+            throw new CustomError('WORD_CHECK_ERROR');
+        }
+
+        const yourWord = new Word(req.body.word);
+        const dbWord = await Word.fromDb(req.body.word.id);
+        const diff = Diff.diffChars(yourWord.word as string, dbWord.word as string);
+        const response: IWordCheckDto = {
+            right: yourWord.word === dbWord.word,
+            you: yourWord.convertToDto(),
+            diff,
+            vault: dbWord.convertToDto(),
+            status: req.body.skipped
+                ? 'skipped'
+                : yourWord.word === dbWord.word
+                    ? 'right'
+                    : 'wrong'
+        };
+
+        res.json(response);
+    } catch (error) {
+        if (error.name === 'USER_NOT_FOUND') {
+            res.sendStatus(401);
+        } else if (error.name === 'WORD_CHECK_ERROR') {
+            res.status(400).json(error);
+        } else {
+            res.status(500).json(error);
+        }
     }
 
     const decoded: IWordDto[] = await jwtDecode(req.body.encoded)
