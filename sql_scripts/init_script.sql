@@ -58,9 +58,9 @@ CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
     id serial PRIMARY KEY,
     user_id integer NOT NULL REFERENCES tnw2.users(id),
     word_id integer NOT NULL REFERENCES tnw2.words(id),
-    right_times_guessed integer DEFAULT 0,
-    false_times_guessed integer DEFAULT 0,
-    partly_times_guessed integer DEFAULT 0
+    times_right integer DEFAULT 0,
+    times_wrong integer DEFAULT 0,
+    times_skipped integer DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS tnw2.relation_words_users (

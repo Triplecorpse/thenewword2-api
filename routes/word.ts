@@ -161,15 +161,15 @@ wordRouter.post('/exercise', async (req: Request, res: Response) => {
 
         const yourWord = new Word(req.body.word);
         const dbWord = await Word.fromDb(req.body.word.id);
-        const diff = Diff.diffChars(yourWord.word as string, dbWord.word as string);
+        const diff = Diff.diffChars(yourWord.word?.toLowerCase() as string, dbWord.word?.toLowerCase() as string);
         const response: IWordCheckDto = {
-            right: yourWord.word === dbWord.word,
+            right: yourWord.word?.toLowerCase() === dbWord.word?.toLowerCase(),
             you: yourWord.convertToDto(),
             diff,
             vault: dbWord.convertToDto(),
             status: req.body.skipped
                 ? 'skipped'
-                : yourWord.word === dbWord.word
+                : yourWord.word?.toLowerCase() === dbWord.word?.toLowerCase()
                     ? 'right'
                     : 'wrong'
         };
