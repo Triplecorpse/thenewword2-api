@@ -174,6 +174,8 @@ wordRouter.post('/exercise', async (req: Request, res: Response) => {
                     : 'wrong'
         };
 
+        await dbWord.setStatistic(req.user.dbid as number, response.status);
+
         res.json(response);
     } catch (error) {
         if (error.name === 'USER_NOT_FOUND') {
