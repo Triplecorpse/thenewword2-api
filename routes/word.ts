@@ -10,6 +10,7 @@ import {CustomError} from '../models/CustomError';
 import {IWordFilterData} from '../interfaces/IWordFilterData';
 import {IWordCheckDto} from "../interfaces/dto/IWordCheckDto";
 import * as Diff from 'diff';
+import {WordStat} from "../models/WordStat";
 
 export const wordRouter = express.Router();
 
@@ -159,6 +160,8 @@ wordRouter.post('/exercise', async (req: Request, res: Response) => {
             throw new CustomError('WORD_CHECK_ERROR');
         }
 
+        const fixingId = req.body.statId;
+        const prevState = req.body.prevState;
         const yourWord = new Word(req.body.word);
         const dbWord = await Word.fromDb(req.body.word.id);
         const diff = Diff.diffChars(yourWord.word?.toLowerCase() as string, dbWord.word?.toLowerCase() as string);
@@ -173,11 +176,36 @@ wordRouter.post('/exercise', async (req: Request, res: Response) => {
                     ? 'right'
                     : 'wrong'
         };
+        let wordStat: WordStat;
 
-        await dbWord.setStatistic(req.user.dbid as number, response.status);
+        if (fixingId) {
+            wordStat = await WordStat.fromDb(fixingId);
+        } else {
+            wordStat = new WordStat();
+            await wordStat.loadFromDB(dbWord.dbid as number, req.user.dbid as number);
+        }
+
+        if (response.status === 'right') {
+            wordStat.right++;
+        } else if (response.status === 'wrong') {
+            wordStat.wrong++;
+        } else if (response.status === 'skipped') {
+            wordStat.skipped++;
+        }
+
+        if (prevState === 'wrong') {
+            wordStat.wrong--;
+        } else if (prevState === 'skipped') {
+            wordStat.skipped--;
+        }
+
+        await wordStat.save();
+
+        response.stat_id = wordStat.dbid;
 
         res.json(response);
     } catch (error) {
+        console.log(error);
         if (error.name === 'USER_NOT_FOUND') {
             res.sendStatus(401);
         } else if (error.name === 'WORD_CHECK_ERROR') {
@@ -186,23 +214,6 @@ wordRouter.post('/exercise', async (req: Request, res: Response) => {
             res.status(500).json(error);
         }
     }
-
-    const decoded: IWordDto[] = await jwtDecode(req.body.encoded)
-        .catch(error => {
-            const err: any = {...error};
-            if (!error?.type) {
-                err.desc = error.message;
-                err.type = 'JWT_ERROR';
-            }
-            res.status(500).json({err});
-            throw error;
-        });
-
-    const wordFromUser: IWordDto = req.body.word;
-    const wordFromVault: IWordDto = decoded.find(word => word.id === wordFromUser.id) as IWordDto;
-    const isRight = wordsEqual(wordFromUser, wordFromVault);
-
-    res.json({you: wordFromUser, vault: wordFromVault, right: isRight});
 });
 
 async function getWordsByQuery(query: string, params: any[], user: User): Promise<Word[]> {

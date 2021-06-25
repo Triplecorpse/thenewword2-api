@@ -7,4 +7,5 @@ export interface IWordCheckDto {
     you: IWordDto;
     vault: IWordDto;
     diff?: Change[];
+    stat_id?: number;
 }
