@@ -50,7 +50,7 @@ userRouter.post('/login', async (req: Request, res: Response) => {
         res.status(200).json({
             token: webtoken,
             login: user.login,
-            native_language: user.nativeLanguage?.dbid,
+            native_language: user.nativeLanguages?.map(({dbid}) => dbid),
             learning_languages: user.learningLanguages.map(lang => lang.dbid)
         });
     } catch (error) {
@@ -72,7 +72,7 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
 
     user.dbid = req.user.dbid;
     user.login = req.user.login;
-    user.nativeLanguage = req.user.nativeLanguage;
+    user.nativeLanguages = req.user.nativeLanguages;
 
     await user.save()
         .catch(error => {
@@ -97,7 +97,7 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
     res.status(200).json({
         token: webtoken,
         login: user.login,
-        native_language: user.nativeLanguage?.dbid,
+        native_language: user.nativeLanguages?.map(({dbid}) => dbid),
         learning_languages: user.learningLanguages.map(lang => lang.dbid)
     });
 })

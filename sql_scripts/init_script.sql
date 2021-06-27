@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS tnw2.users (
     login text NOT NULL UNIQUE CHECK(login != ''),
     password text NOT NULL,
     email text NOT NULL UNIQUE CHECK(email != ''),
-    native_language integer REFERENCES tnw2.languages(id) NOT NULL,
     created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
     last_modified_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
     last_issued_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
@@ -62,6 +61,10 @@ CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
     times_wrong integer DEFAULT 0,
     times_skipped integer DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS tnw2.special_letters (
+    id serial PRIMARY KEY,
+    letter char(1) NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS tnw2.relation_words_users (
     user_id integer NOT NULL REFERENCES tnw2.users(id),
@@ -82,6 +85,11 @@ CREATE TABLE IF NOT EXISTS tnw2.relation_users_learning_language (
 CREATE TABLE IF NOT EXISTS tnw2.relation_users_native_language (
     user_id integer NOT NULL REFERENCES tnw2.users(id),
     language_id integer NOT NULL REFERENCES tnw2.languages(id)
+);
+CREATE TABLE IF NOT EXISTS tnw2.relation_users_learning_language_special_letters (
+    user_id integer NOT NULL REFERENCES tnw2.users(id),
+    language_id integer NOT NULL REFERENCES tnw2.languages(id),
+    letter_id integer NOT NULL REFERENCES tnw2.special_letters(id)
 );
 
 INSERT INTO tnw2.speech_parts (title)

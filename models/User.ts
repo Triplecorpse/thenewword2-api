@@ -15,7 +15,7 @@ export class User implements ICRUDEntity<IUserDto> {
     password?: string = '';
     email: string = '';
     passwordHash?: string = '';
-    nativeLanguage?: Language;
+    nativeLanguages: Language[] = [];
     learningLanguages: Language[] = [];
 
     constructor(user?: IUserDto) {
@@ -23,7 +23,7 @@ export class User implements ICRUDEntity<IUserDto> {
     }
 
     async loadFromDB(loginOrEmail: string, password: string): Promise<void> {
-        const query = 'SELECT tnw2.users.id, tnw2.users.login, tnw2.users.email, tnw2.users.password, tnw2.users.native_language, tnw2.relation_users_learning_language.language_id AS learning_languages_ids FROM tnw2.users LEFT JOIN tnw2.relation_users_learning_language ON tnw2.relation_users_learning_language.user_id = tnw2.users.id WHERE login = $1;';
+        const query = 'SELECT tnw2.users.id, tnw2.users.login, tnw2.users.email, tnw2.users.password, tnw2.relation_users_learning_language.language_id AS learning_languages_ids, tnw2.relation_users_native_languages.language_id AS native_languages_ids FROM tnw2.users LEFT JOIN tnw2.relation_users_learning_language ON tnw2.relation_users_learning_language.user_id = tnw2.users.id LEFT JOIN tnw2.relation_users_native_language ON tnw2.relation_users_native_language.user_id = tnw2.users.id WHERE login = $1;';
         const dbResult = await queryDatabase(query, [loginOrEmail]);
 
         if (!dbResult.length) {
@@ -35,6 +35,7 @@ export class User implements ICRUDEntity<IUserDto> {
         const compareResult = await util.promisify(bcrypt.compare)(password, user.password);
         const isRestoringPassword = password === 'restore' && user.password === 'to_restore';
         const learningLanguages = dbResult.map(result => result.learning_languages_ids);
+        const nativeLanguages = dbResult.map(result => result.native_languages_ids);
 
         if (!compareResult && !isRestoringPassword) {
             throw new CustomError('PASSWORD_CHECK_FAILED');
@@ -43,8 +44,8 @@ export class User implements ICRUDEntity<IUserDto> {
             this.email = user.email;
             this.passwordHash = user.password;
             this.dbid = user.id;
-            this.nativeLanguage = languages.find(lang => lang.dbid === user.native_language)
-            this.learningLanguages = languages.filter(lang => learningLanguages.includes(lang.dbid))
+            this.nativeLanguages = languages.filter(lang => nativeLanguages.includes(lang.dbid));
+            this.learningLanguages = languages.filter(lang => learningLanguages.includes(lang.dbid));
         }
     }
 
@@ -69,16 +70,19 @@ export class User implements ICRUDEntity<IUserDto> {
                 await queryDatabase('DELETE FROM tnw2.relation_users_learning_language WHERE user_id = $1', [
                     this.dbid
                 ]);
+
+                await queryDatabase('DELETE FROM tnw2.relation_users_native_language WHERE user_id = $1', [
+                    this.dbid
+                ]);
             } catch (error) {
-                throw new CustomError('GENERIC_DB_ERROR', error);
+                throw new CustomError('USER_UPDATE_ERROR', error);
             }
         } else {
             try {
-                const user = await queryDatabase('INSERT INTO tnw2.users (login, password, email, native_language) VALUES($1, $2, $3, $4) RETURNING *', [
+                const user = await queryDatabase('INSERT INTO tnw2.users (login, password, email) VALUES($1, $2, $3) RETURNING *', [
                     this.login,
                     this.passwordHash,
-                    this.email,
-                    this.nativeLanguage?.dbid
+                    this.email
                 ]);
 
                 this.dbid = user[0].id;
@@ -89,7 +93,7 @@ export class User implements ICRUDEntity<IUserDto> {
                     } else if (error.constraint === 'users_email_key') {
                         throw new CustomError('EMAIL_EXISTS');
                     } else {
-                        throw new CustomError('GENERIC_DB_ERROR', error);
+                        throw new CustomError('USER_SAVE_ERROR', error);
                     }
                 }
             }
@@ -105,7 +109,21 @@ export class User implements ICRUDEntity<IUserDto> {
                     ...this.learningLanguages.map(lang => lang.dbid)
                 ]);
             } catch (error) {
-                throw new CustomError('GENERIC_DB_ERROR', error);
+                throw new CustomError('LEARNING_LANGUAGES_SAVE_ERROR', error);
+            }
+        }
+
+        if (this.nativeLanguages.length) {
+            try {
+                const queryPart =
+                    this.nativeLanguages.map((lang, index) => `($1, $${index + 2})`).join(', ');
+
+                await queryDatabase(`INSERT INTO tnw2.relation_users_native_language (user_id, language_id) VALUES ${queryPart} RETURNING *`, [
+                    this.dbid,
+                    ...this.nativeLanguages.map(lang => lang.dbid)
+                ]);
+            } catch (error) {
+                throw new CustomError('NATIVE_LANGUAGES_SAVE_ERROR', error);
             }
         }
     }
@@ -115,7 +133,7 @@ export class User implements ICRUDEntity<IUserDto> {
             password: this.password,
             email: this.email,
             login: this.login,
-            native_language: this.nativeLanguage?.dbid,
+            native_languages: this.nativeLanguages?.map(ll => ll.dbid),
             learning_languages: this.learningLanguages?.map(ll => ll.dbid)
         } as IUserDto;
     }
@@ -124,7 +142,7 @@ export class User implements ICRUDEntity<IUserDto> {
         this.login = entity?.login as string;
         this.password = entity?.password as string;
         this.email = entity?.email as string;
-        this.nativeLanguage = languages.find(l => l.dbid === entity?.native_language);
+        this.nativeLanguages = languages.filter(l => entity?.native_languages?.includes(l.dbid));
         this.learningLanguages = languages.filter(l => entity?.learning_languages?.includes(l.dbid));
     }
 
@@ -146,14 +164,16 @@ export class User implements ICRUDEntity<IUserDto> {
         try {
             const result = await queryDatabase('SELECT * FROM tnw2.users WHERE id=$1', [id]);
             const learningLanguagesIdsResult = await queryDatabase('SELECT language_id as id FROM tnw2.relation_users_learning_language WHERE user_id=$1', [id]);
+            const nativeLanguagesIdsResult = await queryDatabase('SELECT language_id as id FROM tnw2.relation_users_learning_language WHERE user_id=$1', [id]);
             const learningLanguages = await Promise.all(learningLanguagesIdsResult.map(({id}) => Language.fromDb(id)));
+            const nativeLanguages = await Promise.all(nativeLanguagesIdsResult.map(({id}) => Language.fromDb(id)));
             const user = new User();
 
             user.dbid = result[0].id;
             user.login = result[0].login;
             user.passwordHash = result[0].password;
             user.email = result[0].email;
-            user.nativeLanguage = await Language.fromDb(result[0].native_language);
+            user.nativeLanguages = nativeLanguages;
             user.learningLanguages = learningLanguages;
 
             return user;
