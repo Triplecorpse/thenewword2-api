@@ -5,6 +5,7 @@ import {Request} from 'express';
 import {IUserTokenPayload} from '../interfaces/IUserTokenPayload';
 import {User} from '../models/User';
 import {Secret} from "jsonwebtoken";
+import * as bcrypt from "bcrypt";
 
 dotenv.config();
 
@@ -12,7 +13,7 @@ export async function jwtSign(payload: any): Promise<string> {
     return util.promisify(jwt.sign)(payload, process.env.WEB_TOKEN as string) as Promise<string>;
 }
 
-export function jwtVerify(token: string, req: Request): Promise<User | null> {
+export function jwtVerify(token: string, host: string, ip: string, ua: string): Promise<User | null> {
     if (!token) {
         return Promise.resolve(null);
     }
@@ -23,15 +24,14 @@ export function jwtVerify(token: string, req: Request): Promise<User | null> {
 
         if (verificationResult) {
             const tokenMatchesUserParams =
-                verificationResult.host === req.hostname &&
-                verificationResult.IP === req.ip &&
-                verificationResult.UA === req.get('user-agent') as string;
+                await util.promisify(bcrypt.compare)(host, verificationResult.host) &&
+                await util.promisify(bcrypt.compare)(ip, verificationResult.IP) &&
+                await util.promisify(bcrypt.compare)(ua, verificationResult.UA);
 
             if (tokenMatchesUserParams) {
                 const user = new User();
-                await user.loadFromDB(verificationResult.login, verificationResult.password);
-
-                user.password = verificationResult.password;
+                user.dbid = verificationResult.id;
+                user.login = verificationResult.login;
 
                 resolve(user);
             } else {

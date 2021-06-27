@@ -79,6 +79,10 @@ CREATE TABLE IF NOT EXISTS tnw2.relation_users_learning_language (
     user_id integer NOT NULL REFERENCES tnw2.users(id),
     language_id integer NOT NULL REFERENCES tnw2.languages(id)
 );
+CREATE TABLE IF NOT EXISTS tnw2.relation_users_native_language (
+    user_id integer NOT NULL REFERENCES tnw2.users(id),
+    language_id integer NOT NULL REFERENCES tnw2.languages(id)
+);
 
 INSERT INTO tnw2.speech_parts (title)
 VALUES ('noun'),

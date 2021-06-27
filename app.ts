@@ -58,8 +58,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 app.use(async (req: Request, res: Response, next: NextFunction) => {
     if (req.query.token) {
-        req.user = await jwtVerify(req.query.token as string, req) as User;
+        req.user = await jwtVerify(req.query.token as string, req.hostname, req.ip, req.get('user-agent') as string) as User;
     }
+
     next();
 });
 app.use('/user', userRouter);

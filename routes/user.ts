@@ -5,24 +5,26 @@ import {jwtSign} from '../services/jwt';
 import {User} from '../models/User';
 import {validateRecaptcha} from '../services/recaptcha';
 import {CustomError} from '../models/CustomError';
+import * as util from "util";
+import * as bcrypt from "bcrypt";
 
 export const userRouter = express.Router();
 
 userRouter.post('/register', async (req: Request, res: Response) => {
-    const user = new User(req.body);
-
     try {
+        const user = new User(req.body);
+
         await validateRecaptcha(req.body.token);
         await user.save();
         res.status(201).json({});
     } catch (error) {
         if (error.code === '23505') {
             if (error.constraint === 'users_login_key') {
-                res.status(400).json(new CustomError('LOGIN_EXISTS'));
+                res.status(401).json(new CustomError('LOGIN_EXISTS'));
             } else if (error.constraint === 'users_email_key') {
-                res.status(400).json(new CustomError('EMAIL_EXISTS'));
+                res.status(401).json(new CustomError('EMAIL_EXISTS'));
             } else {
-                res.status(400).json(error);
+                res.status(401).json(error);
             }
         } else {
             res.status(400).json(error);
@@ -32,14 +34,16 @@ userRouter.post('/register', async (req: Request, res: Response) => {
 
 userRouter.post('/login', async (req: Request, res: Response) => {
     try {
-        await validateRecaptcha(req.body.token);
         const user = new User();
+
+        await validateRecaptcha(req.body.token);
         await user.loadFromDB(req.body.login, req.body.password);
+
         const payload: IUserTokenPayload = {
-            host: req.hostname,
-            IP: req.ip,
-            password: req.body.password,
-            UA: req.get('user-agent') as string,
+            host: await util.promisify(bcrypt.hash)(req.hostname, 10) as string,
+            IP: await util.promisify(bcrypt.hash)(req.ip, 10) as string,
+            UA: await util.promisify(bcrypt.hash)(req.get('user-agent'), 10) as string,
+            id: user.dbid as number,
             login: req.body.login
         };
         const webtoken = await jwtSign(payload);
@@ -52,39 +56,6 @@ userRouter.post('/login', async (req: Request, res: Response) => {
     } catch (error) {
         res.status(400).json(error);
     }
-    // await validateRecaptcha(req.body.token)
-    //     .catch(() => {
-    //         res.status(400).json({type: 'RECAPTCHA_ERROR'});
-    //     });
-    //
-    // const user = new User();
-    //
-    // await user.loadFromDB(req.body.login, req.body.password)
-    //     .catch(error => {
-    //         console.error(error);
-    //         res.sendStatus(401);
-    //     });
-
-    // const payload: IUserTokenPayload = {
-    //     host: req.hostname,
-    //     IP: req.ip,
-    //     password: req.body.password,
-    //     UA: req.get('user-agent') as string,
-    //     login: req.body.login
-    // }
-    // const webtoken = await jwtSign(payload)
-    //     .catch(error => {
-    //         console.error(error);
-    //         res.status(500).json(error);
-    //         throw error;
-    //     });
-    //
-    // res.status(200).json({
-    //     token: webtoken,
-    //     login: user.login,
-    //     native_language: user.nativeLanguage?.dbid,
-    //     learning_languages: user.learningLanguages.map(lang => lang.dbid)
-    // });
 });
 
 userRouter.post('/modify', async (req: Request, res: Response) => {
@@ -112,9 +83,9 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
     const payload: IUserTokenPayload = {
         host: req.hostname,
         IP: req.ip,
-        password: req.body.password,
         UA: req.get('user-agent') as string,
-        login: req.body.login
+        login: req.body.login,
+        id: req.body.user_id
     }
     const webtoken = await jwtSign(payload)
         .catch(error => {
