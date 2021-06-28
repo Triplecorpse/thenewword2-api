@@ -23,30 +23,34 @@ export class User implements ICRUDEntity<IUserDto> {
     }
 
     async loadFromDB(loginOrEmail: string, password: string): Promise<void> {
-        const query = 'SELECT tnw2.users.id, tnw2.users.login, tnw2.users.email, tnw2.users.password, tnw2.relation_users_learning_language.language_id AS learning_languages_ids, tnw2.relation_users_native_languages.language_id AS native_languages_ids FROM tnw2.users LEFT JOIN tnw2.relation_users_learning_language ON tnw2.relation_users_learning_language.user_id = tnw2.users.id LEFT JOIN tnw2.relation_users_native_language ON tnw2.relation_users_native_language.user_id = tnw2.users.id WHERE login = $1;';
-        const dbResult = await queryDatabase(query, [loginOrEmail]);
+        try {
+            const query = 'SELECT tnw2.users.id, tnw2.users.login, tnw2.users.email, tnw2.users.password, tnw2.relation_users_learning_language.language_id AS learning_languages_ids, tnw2.relation_users_native_language.language_id AS native_languages_ids FROM tnw2.users LEFT JOIN tnw2.relation_users_learning_language ON tnw2.relation_users_learning_language.user_id = tnw2.users.id LEFT JOIN tnw2.relation_users_native_language ON tnw2.relation_users_native_language.user_id = tnw2.users.id WHERE login = $1;';
+            const dbResult = await queryDatabase(query, [loginOrEmail]);
 
-        if (!dbResult.length) {
-            throw new CustomError('USER_NOT_FOUND');
+            if (!dbResult.length) {
+                throw new CustomError('USER_NOT_FOUND');
+            }
+
+            const user = dbResult[0];
+            const compareResult = await util.promisify(bcrypt.compare)(password, user.password);
+            const isRestoringPassword = password === 'restore' && user.password === 'to_restore';
+            const learningLanguages = dbResult.map(result => result.learning_languages_ids);
+            const nativeLanguages = dbResult.map(result => result.native_languages_ids);
+
+            if (!compareResult && !isRestoringPassword) {
+                throw new CustomError('PASSWORD_CHECK_FAILED');
+            } else {
+                this.login = user.login;
+                this.email = user.email;
+                this.passwordHash = user.password;
+                this.dbid = user.id;
+                this.nativeLanguages = languages.filter(lang => nativeLanguages.includes(lang.dbid));
+                this.learningLanguages = languages.filter(lang => learningLanguages.includes(lang.dbid));
+            }
+        } catch (error) {
+            throw new CustomError('USER_LOAD_ERROR', error)
         }
 
-
-        const user = dbResult[0];
-        const compareResult = await util.promisify(bcrypt.compare)(password, user.password);
-        const isRestoringPassword = password === 'restore' && user.password === 'to_restore';
-        const learningLanguages = dbResult.map(result => result.learning_languages_ids);
-        const nativeLanguages = dbResult.map(result => result.native_languages_ids);
-
-        if (!compareResult && !isRestoringPassword) {
-            throw new CustomError('PASSWORD_CHECK_FAILED');
-        } else {
-            this.login = user.login;
-            this.email = user.email;
-            this.passwordHash = user.password;
-            this.dbid = user.id;
-            this.nativeLanguages = languages.filter(lang => nativeLanguages.includes(lang.dbid));
-            this.learningLanguages = languages.filter(lang => learningLanguages.includes(lang.dbid));
-        }
     }
 
     async save(): Promise<void> {
@@ -181,4 +185,24 @@ export class User implements ICRUDEntity<IUserDto> {
             throw new CustomError('GENERIC_DB_ERROR', error);
         }
     };
+
+    static async byEmail(email: string): Promise<boolean> {
+        try {
+            const result = await queryDatabase('SELECT * from tnw2.users WHERE email=$1', [email]);
+
+            return !!result[0];
+        } catch(error) {
+            throw new CustomError('USER_BY_EMAIL_ERROR', error);
+        }
+    }
+
+    static async byLogin(login: string): Promise<boolean> {
+        try {
+            const result = await queryDatabase('SELECT * from tnw2.users WHERE login=$1', [login]);
+
+            return !!result[0];
+        } catch(error) {
+            throw new CustomError('USER_BY_LOGIN_ERROR', error);
+        }
+    }
 }

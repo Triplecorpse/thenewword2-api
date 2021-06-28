@@ -50,7 +50,7 @@ userRouter.post('/login', async (req: Request, res: Response) => {
         res.status(200).json({
             token: webtoken,
             login: user.login,
-            native_language: user.nativeLanguages?.map(({dbid}) => dbid),
+            native_languages: user.nativeLanguages?.map(({dbid}) => dbid),
             learning_languages: user.learningLanguages.map(lang => lang.dbid)
         });
     } catch (error) {
@@ -100,4 +100,20 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
         native_language: user.nativeLanguages?.map(({dbid}) => dbid),
         learning_languages: user.learningLanguages.map(lang => lang.dbid)
     });
-})
+});
+
+userRouter.post('/validate-login', async (req: Request, res: Response) => {
+    try {
+        await validateRecaptcha(req.body.token);
+    } catch (error) {
+        res.status(500).json(error);
+    }
+});
+
+userRouter.post('/validate-email', async (req: Request, res: Response) => {
+    try {
+        await validateRecaptcha(req.body.token);
+    } catch (error) {
+        res.status(500).json(error);
+    }
+});
