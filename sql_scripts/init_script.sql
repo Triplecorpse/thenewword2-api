@@ -59,7 +59,8 @@ CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
     word_id integer NOT NULL REFERENCES tnw2.words(id),
     times_right integer DEFAULT 0,
     times_wrong integer DEFAULT 0,
-    times_skipped integer DEFAULT 0
+    times_skipped integer DEFAULT 0,
+    last_issued_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
 );
 CREATE TABLE IF NOT EXISTS tnw2.special_letters (
     id serial PRIMARY KEY,

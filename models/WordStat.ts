@@ -47,7 +47,7 @@ export class WordStat implements ICRUDEntity {
         try {
             let result;
             if (this.dbid) {
-                result = await queryDatabase('UPDATE tnw2.word_statistics SET times_right=$1, times_wrong=$2, times_skipped=$3 WHERE id=$4 RETURNING id', [this.right, this.wrong, this. skipped, this.dbid]);
+                result = await queryDatabase('UPDATE tnw2.word_statistics SET times_right=$1, times_wrong=$2, times_skipped=$3, last_issued_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$4 RETURNING id', [this.right, this.wrong, this. skipped, this.dbid]);
             } else {
                 result = await queryDatabase('INSERT INTO tnw2.word_statistics (user_id, word_id, times_wrong, times_right, times_skipped) VALUES ($1, $2, $3, $4, $5) RETURNING id', [this.user.dbid, this.word.dbid, this.wrong, this.right, this. skipped]);
             }
