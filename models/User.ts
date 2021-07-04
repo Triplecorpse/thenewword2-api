@@ -53,6 +53,28 @@ export class User implements ICRUDEntity<IUserDto> {
 
     }
 
+    async checkPassword(password: string): Promise<boolean> {
+        let queryPart = '';
+        let queryPartParams = [];
+
+        if (this.dbid) {
+            queryPart = 'id=$1';
+            queryPartParams = [this.dbid];
+        } else if (this.login) {
+            queryPart = 'login=$1';
+            queryPartParams = [this.login];
+        } else if (this.email) {
+            queryPart = 'email=$1'
+            queryPartParams = [this.email];
+        } else {
+            throw new CustomError('USER_CHECK_PASSWORD_ERROR', {message: 'id, login or email is required'})
+        }
+
+        const result = await queryDatabase('SELECT password FROM users WHERE ' + queryPart, queryPartParams as string[]);
+
+        return bcrypt.compare(password, result[0]?.password);
+    }
+
     async save(): Promise<void> {
         if (this.password) {
             this.passwordHash = await util.promisify(bcrypt.hash)(this.password, saltRounds) as string;
@@ -143,9 +165,9 @@ export class User implements ICRUDEntity<IUserDto> {
     }
 
     replaceWith(entity?: IUserDto): void {
-        this.login = entity?.login as string;
-        this.password = entity?.password as string;
-        this.email = entity?.email as string;
+        this.login = entity?.login as string || this.login;
+        this.password = entity?.password as string || this.password;
+        this.email = entity?.email as string || this.email;
         this.nativeLanguages = languages.filter(l => entity?.native_languages?.includes(l.dbid));
         this.learningLanguages = languages.filter(l => entity?.learning_languages?.includes(l.dbid));
     }
@@ -191,7 +213,7 @@ export class User implements ICRUDEntity<IUserDto> {
             const result = await queryDatabase('SELECT * from tnw2.users WHERE email=$1', [email]);
 
             return !!result[0];
-        } catch(error) {
+        } catch (error) {
             throw new CustomError('USER_BY_EMAIL_ERROR', error);
         }
     }
@@ -201,7 +223,7 @@ export class User implements ICRUDEntity<IUserDto> {
             const result = await queryDatabase('SELECT * from tnw2.users WHERE login=$1', [login]);
 
             return !!result[0];
-        } catch(error) {
+        } catch (error) {
             throw new CustomError('USER_BY_LOGIN_ERROR', error);
         }
     }

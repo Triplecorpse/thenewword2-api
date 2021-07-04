@@ -5,8 +5,8 @@ import {jwtSign} from '../services/jwt';
 import {User} from '../models/User';
 import {validateRecaptcha} from '../services/recaptcha';
 import {CustomError} from '../models/CustomError';
-import * as util from "util";
-import * as bcrypt from "bcrypt";
+import * as util from 'util';
+import * as bcrypt from 'bcrypt';
 
 export const userRouter = express.Router();
 
@@ -59,47 +59,49 @@ userRouter.post('/login', async (req: Request, res: Response) => {
 });
 
 userRouter.post('/modify', async (req: Request, res: Response) => {
-    if (!req.user || req.user.login !== req.body.login || req.user.password !== req.body.password) {
-        res.sendStatus(401);
-        throw new Error('INVALID_USER');
-    }
+    try {
+        if (!req.user
+            || req.user.login !== req.body.login
+            || req.user.dbid !== req.body.dbid) {
+            throw new CustomError('USER_UPDATE_ERROR');
+        }
 
-    const user = new User({
-        email: req.user.email,
-        ...req.body,
-        password: req.body.new_password || req.body.password
-    });
+        const user = await User.fromDb(req.body.id);
 
-    user.dbid = req.user.dbid;
-    user.login = req.user.login;
-    user.nativeLanguages = req.user.nativeLanguages;
+        if (req.body.new_password) {
+            const checkResult = await user.checkPassword(req.body.old_password);
 
-    await user.save()
-        .catch(error => {
-            res.status(400).json(error);
-            throw error;
+            if (!checkResult) {
+                throw new CustomError('USER_CHECK_PASSWORD_ERROR', {message: 'password mismatch'});
+            }
+        }
+
+        user.replaceWith({
+            ...req.body,
+            password: req.body.new_password
         });
 
-    const payload: IUserTokenPayload = {
-        host: req.hostname,
-        IP: req.ip,
-        UA: req.get('user-agent') as string,
-        login: req.body.login,
-        id: req.body.user_id
-    }
-    const webtoken = await jwtSign(payload)
-        .catch(error => {
-            console.error(error);
+        await user.save();
+
+        const payload: IUserTokenPayload = {
+            host: await util.promisify(bcrypt.hash)(req.hostname, 10) as string,
+            IP: await util.promisify(bcrypt.hash)(req.ip, 10) as string,
+            UA: await util.promisify(bcrypt.hash)(req.get('user-agent'), 10) as string,
+            id: user.dbid as number,
+            login: req.body.login
+        };
+        const webtoken = await jwtSign(payload);
+
+        res.status(200).json({
+            token: webtoken
+        });
+    } catch (error) {
+        if (error.name === 'USER_UPDATE_ERROR') {
+            res.status(401).json(error);
+        } else {
             res.status(500).json(error);
-            throw error;
-        });
-
-    res.status(200).json({
-        token: webtoken,
-        login: user.login,
-        native_language: user.nativeLanguages?.map(({dbid}) => dbid),
-        learning_languages: user.learningLanguages.map(lang => lang.dbid)
-    });
+        }
+    }
 });
 
 userRouter.post('/validate-login', async (req: Request, res: Response) => {
