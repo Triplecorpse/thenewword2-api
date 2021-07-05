@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import {ICRUDEntity} from '../interfaces/ICRUDEntity';
 import {Language} from './Language';
 import {languages} from '../const/constData';
-import {CustomError} from "./CustomError";
+import {CustomError} from './CustomError';
 
 const saltRounds = 10;
 
@@ -13,7 +13,7 @@ export class User implements ICRUDEntity<IUserDto> {
     dbid?: number;
     login: string = '';
     password?: string = '';
-    email: string = '';
+    email?: string = '';
     passwordHash?: string = '';
     nativeLanguages: Language[] = [];
     learningLanguages: Language[] = [];
@@ -48,9 +48,12 @@ export class User implements ICRUDEntity<IUserDto> {
                 this.learningLanguages = languages.filter(lang => learningLanguages.includes(lang.dbid));
             }
         } catch (error) {
+            if (error.name === 'USER_NOT_FOUND') {
+                throw error;
+            }
+
             throw new CustomError('USER_LOAD_ERROR', error)
         }
-
     }
 
     async checkPassword(password: string): Promise<boolean> {
@@ -168,8 +171,12 @@ export class User implements ICRUDEntity<IUserDto> {
         this.login = entity?.login as string || this.login;
         this.password = entity?.password as string || this.password;
         this.email = entity?.email as string || this.email;
-        this.nativeLanguages = languages.filter(l => entity?.native_languages?.includes(l.dbid));
-        this.learningLanguages = languages.filter(l => entity?.learning_languages?.includes(l.dbid));
+        this.nativeLanguages = entity?.native_languages
+            ? languages.filter(l => entity?.native_languages?.includes(l.dbid))
+            : this.nativeLanguages;
+        this.learningLanguages = entity?.learning_languages
+            ? languages.filter(l => entity?.learning_languages?.includes(l.dbid))
+            : this.learningLanguages;
     }
 
     async remove(): Promise<void> {
@@ -186,11 +193,11 @@ export class User implements ICRUDEntity<IUserDto> {
         }
     }
 
-    static async fromDb(id: number): Promise<User> {
+    static async fromDb(userId: number): Promise<User> {
         try {
-            const result = await queryDatabase('SELECT * FROM tnw2.users WHERE id=$1', [id]);
-            const learningLanguagesIdsResult = await queryDatabase('SELECT language_id as id FROM tnw2.relation_users_learning_language WHERE user_id=$1', [id]);
-            const nativeLanguagesIdsResult = await queryDatabase('SELECT language_id as id FROM tnw2.relation_users_learning_language WHERE user_id=$1', [id]);
+            const result = await queryDatabase('SELECT * FROM tnw2.users WHERE id=$1', [userId]);
+            const learningLanguagesIdsResult = await queryDatabase('SELECT language_id as id FROM tnw2.relation_users_learning_language WHERE user_id=$1', [userId]);
+            const nativeLanguagesIdsResult = await queryDatabase('SELECT language_id as id FROM tnw2.relation_users_native_language WHERE user_id=$1', [userId]);
             const learningLanguages = await Promise.all(learningLanguagesIdsResult.map(({id}) => Language.fromDb(id)));
             const nativeLanguages = await Promise.all(nativeLanguagesIdsResult.map(({id}) => Language.fromDb(id)));
             const user = new User();

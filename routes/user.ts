@@ -48,12 +48,15 @@ userRouter.post('/login', async (req: Request, res: Response) => {
         };
         const webtoken = await jwtSign(payload);
         res.status(200).json({
+            id: user.dbid,
             token: webtoken,
             login: user.login,
             native_languages: user.nativeLanguages?.map(({dbid}) => dbid),
             learning_languages: user.learningLanguages.map(lang => lang.dbid)
         });
     } catch (error) {
+        console.error(error);
+
         res.status(400).json(error);
     }
 });
@@ -61,9 +64,12 @@ userRouter.post('/login', async (req: Request, res: Response) => {
 userRouter.post('/modify', async (req: Request, res: Response) => {
     try {
         if (!req.user
-            || req.user.login !== req.body.login
-            || req.user.dbid !== req.body.dbid) {
-            throw new CustomError('USER_UPDATE_ERROR');
+            || req.user.dbid !== req.body.id) {
+            throw new CustomError('USER_UPDATE_ERROR', {
+                message: 'Didn\'t pass route checks',
+                reqUser: req.user,
+                reqBody: req.body
+            });
         }
 
         const user = await User.fromDb(req.body.id);
@@ -92,10 +98,16 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
         };
         const webtoken = await jwtSign(payload);
 
+        delete user.email;
+        delete user.password;
+
         res.status(200).json({
+            ...user.convertToDto(),
             token: webtoken
         });
     } catch (error) {
+        console.error(error);
+
         if (error.name === 'USER_UPDATE_ERROR') {
             res.status(401).json(error);
         } else {
@@ -109,6 +121,10 @@ userRouter.post('/modify-keyboard-settings', async (req: Request, res: Response)
         if (!req.user) {
             throw new CustomError('USER_NOT_FOUND');
         }
+
+        console.log(req.body);
+
+        res.json({success: true});
     } catch (error) {
         if (error.name === 'USER_NOT_FOUND') {
             res.status(401).json(error);

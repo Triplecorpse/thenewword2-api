@@ -2,7 +2,7 @@ export class CustomError extends Error {
     data: any;
 
     constructor(name: ErrorName, data?: any, message?: string) {
-        super(message);
+        super(message || data?.message);
         super.name = name;
         this.data = data;
     }

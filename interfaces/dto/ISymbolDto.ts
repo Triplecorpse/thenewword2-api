@@ -1,6 +1,6 @@
 export interface ISymbolDto {
     language_id: number;
     user_id: number;
-    symbol: string;
+    symbols: string[];
     action: 'add' | 'remove';
 }
