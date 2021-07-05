@@ -104,6 +104,20 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
     }
 });
 
+userRouter.post('/modify-keyboard-settings', async (req: Request, res: Response) => {
+    try {
+        if (!req.user) {
+            throw new CustomError('USER_NOT_FOUND');
+        }
+    } catch (error) {
+        if (error.name === 'USER_NOT_FOUND') {
+            res.status(401).json(error);
+        } else {
+            res.status(500).json(error)
+        }
+    }
+});
+
 userRouter.post('/validate-login', async (req: Request, res: Response) => {
     try {
         await validateRecaptcha(req.body.token);
