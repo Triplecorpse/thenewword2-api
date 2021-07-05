@@ -122,8 +122,6 @@ userRouter.post('/modify-keyboard-settings', async (req: Request, res: Response)
             throw new CustomError('USER_NOT_FOUND');
         }
 
-        console.log(req.body);
-
         res.json({success: true});
     } catch (error) {
         if (error.name === 'USER_NOT_FOUND') {
