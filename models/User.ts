@@ -159,6 +159,7 @@ export class User implements ICRUDEntity<IUserDto> {
 
     convertToDto(): IUserDto {
         return {
+            id: this.dbid,
             password: this.password,
             email: this.email,
             login: this.login,
