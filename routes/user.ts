@@ -74,12 +74,18 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
 
         const user = await User.fromDb(req.body.id);
 
-        if (req.body.new_password) {
-            const checkResult = await user.checkPassword(req.body.old_password);
+        if (req.body.password) {
+            const checkResult = await user.checkPassword(req.body.password);
+
+            console.log(checkResult);
 
             if (!checkResult) {
                 throw new CustomError('USER_CHECK_PASSWORD_ERROR', {message: 'password mismatch'});
             }
+        }
+
+        if ((req.body.new_password || req.body.email) && !req.body.password) {
+            throw new CustomError('USER_SECURITY_CHECK_ERROR', {message: 'Password should be provided on security settings change'})
         }
 
         user.replaceWith({

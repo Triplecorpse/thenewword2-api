@@ -73,9 +73,9 @@ export class User implements ICRUDEntity<IUserDto> {
             throw new CustomError('USER_CHECK_PASSWORD_ERROR', {message: 'id, login or email is required'})
         }
 
-        const result = await queryDatabase('SELECT password FROM users WHERE ' + queryPart, queryPartParams as string[]);
+        const result = await queryDatabase('SELECT password FROM tnw2.users WHERE ' + queryPart, queryPartParams as string[]);
 
-        return bcrypt.compare(password, result[0]?.password);
+        return await bcrypt.compare(password, result[0]?.password);
     }
 
     async save(): Promise<void> {
