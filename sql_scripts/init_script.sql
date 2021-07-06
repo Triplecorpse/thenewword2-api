@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS tnw2.relation_users_native_language (
     language_id integer NOT NULL REFERENCES tnw2.languages(id)
 );
 CREATE TABLE IF NOT EXISTS tnw2.relation_users_learning_language_special_letters (
-    user_id integer NOT NULL REFERENCES tnw2.users(id),
+    user_id integer REFERENCES tnw2.users(id),
     language_id integer NOT NULL REFERENCES tnw2.languages(id),
     letter_id integer NOT NULL REFERENCES tnw2.special_letters(id)
 );
@@ -300,3 +300,39 @@ VALUES ('aa', 'Afar', 'Afar', false),
        ('za', 'Zhuang', 'Cuengh / Tôô / 壮语', false),
        ('zh', 'Chinese', '中文', false),
        ('zu', 'Zulu', 'isiZulu', false);
+INSERT INTO tnw2.special_letters (letter)
+VALUES ('à'), ('á'), ('â'), ('ä'), ('æ'), ('ã'), ('å'), ('ā'), ('ă'), ('ç'), ('ć'), ('č'), ('ċ'), ('ď'), ('đ'), ('è'),
+       ('é'), ('ê'), ('ë'), ('ē'), ('ė'), ('ę'), ('ģ'), ('ġ'), ('ğ'), ('ì'), ('į'), ('ī'), ('í'), ('ï'), ('î'), ('ķ'),
+       ('ł'), ('ļ'), ('ń'), ('ñ'), ('ņ'), ('ň'), ('õ'), ('ō'), ('ø'), ('œ'), ('ó'), ('ò'), ('ö'), ('ő'), ('ô'), ('ŕ'),
+       ('ř'), ('ß'), ('ś'), ('š'), ('ş'), ('ț'), ('ť'), ('ū'), ('ú'), ('ù'), ('ü'), ('ű'), ('û'), ('ų'), ('ů'), ('ŭ'),
+       ('ÿ'), ('ý'), ('ž'), ('ź'), ('ż'), ('ӂ'), ('ѕ'), ('џ'), ('Ꙟ'), ('Ѵ'), ('ў'), ('ѓ'), ('ќ'), ('ђ'), ('љ'), ('њ'),
+       ('ћ'), ('є'), ('ї'), ('ґ');
+INSERT INTO tnw2.relation_users_learning_language_special_letters (language_id, letter_id)
+    VALUES ();
+    -- belorussian
+    -- bulgarian
+    -- macedonian
+    -- polesky (?)
+    -- rusinsky
+    -- serbian
+    -- ukrainian
+    --    венгерский
+    --    датский
+    --    испанский
+    --    итальянский
+    --    латышский
+    --    литовский
+    --    мальтийский
+    --    немецкий
+    --    нидерландский
+    --    польский
+    --    португальский
+    --    румынский
+    --    словацкий
+    --    словенский
+    --    финский
+    --    французский
+    --    хорватский
+    --    чешский
+    --    шведский
+    --    эстонский

@@ -77,8 +77,6 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
         if (req.body.password) {
             const checkResult = await user.checkPassword(req.body.password);
 
-            console.log(checkResult);
-
             if (!checkResult) {
                 throw new CustomError('USER_CHECK_PASSWORD_ERROR', {message: 'password mismatch'});
             }
