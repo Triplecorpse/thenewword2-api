@@ -2,9 +2,8 @@ import * as express from 'express';
 import {Request, Response} from 'express';
 import {queryDatabase} from '../services/db';
 import {Word} from '../models/Word';
-import {genders, languages, speechParts} from '../const/constData';
+import {genders, keyMappers, languages, speechParts} from '../const/constData';
 import {User} from '../models/User';
-import {jwtDecode} from '../services/jwt';
 import {IWordDto} from '../interfaces/dto/IWordDto';
 import {CustomError} from '../models/CustomError';
 import {IWordFilterData} from '../interfaces/IWordFilterData';
@@ -18,7 +17,8 @@ wordRouter.get('/metadata', (req: Request, res: Response) => {
     res.json({
         speechParts: speechParts.map(sp => sp.convertToDto()),
         genders: genders.map(g => g.convertToDto()),
-        languages: languages.map(l => l.convertToDto())
+        languages: languages.map(l => l.convertToDto()),
+        symbols: keyMappers.map(k => k.convertToDto())
     });
 });
 

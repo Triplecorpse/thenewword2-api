@@ -7,11 +7,12 @@ import {connectToDatabase, queryDatabase} from './services/db';
 import {jwtVerify} from './services/jwt';
 import {wordRouter} from './routes/word';
 import {User} from './models/User';
-import {genders, languages, speechParts} from './const/constData';
+import {genders, keyMappers, languages, speechParts} from './const/constData';
 import {Gender} from './models/Gender';
 import {SpeechPart} from './models/SpeechPart';
 import {Language} from './models/Language';
 import {wordsetRouter} from './routes/wordset';
+import {KeyMapper} from "./models/KeyMapper";
 
 dotenv.config();
 
@@ -39,6 +40,11 @@ connectToDatabase()
     })
     .then(() => [...genders, ...speechParts, ...languages])
     .then(result => Promise.all(result.map(entity => entity.loadFromDb())))
+    .then(async () => {
+        (await KeyMapper.loadShared()).forEach(km => {
+            keyMappers.push(km);
+        });
+    })
     .then(() => {
         app.listen(process.env.PORT, () => {
             console.log('listening on port', process.env.PORT);
