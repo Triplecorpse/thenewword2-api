@@ -4,4 +4,5 @@ export interface IUserTokenPayload {
     IP: string;
     host: string;
     id: number;
+    iat?: number;
 }

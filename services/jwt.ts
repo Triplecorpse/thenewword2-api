@@ -1,16 +1,14 @@
 import * as dotenv from 'dotenv';
 import * as util from 'util';
 import * as jwt from 'jsonwebtoken'
-import {Request} from 'express';
 import {IUserTokenPayload} from '../interfaces/IUserTokenPayload';
 import {User} from '../models/User';
-import {Secret} from "jsonwebtoken";
 import * as bcrypt from "bcrypt";
 
 dotenv.config();
 
 export async function jwtSign(payload: any): Promise<string> {
-    return util.promisify(jwt.sign)(payload, process.env.WEB_TOKEN as string) as Promise<string>;
+    return Promise.resolve(jwt.sign(payload, process.env.WEB_TOKEN as string, {expiresIn: '15m'}));
 }
 
 export function jwtVerify(token: string, host: string, ip: string, ua: string): Promise<User | null> {
@@ -38,6 +36,8 @@ export function jwtVerify(token: string, host: string, ip: string, ua: string): 
                 resolve(null);
             }
         }
+
+        resolve(null);
     });
 }
 
@@ -47,4 +47,16 @@ export async function jwtDecode<T = any>(token: string): Promise<T> {
     }
 
     return await util.promisify(jwt.verify)(token, process.env.WEB_TOKEN as string) as any;
+}
+
+export function generateRefreshToken(): string {
+    const symbols = 'qwertyuiopasdfghjklzxcvbnm1234567890';
+    let code = '';
+
+    while (code.length < 32) {
+        const index = (Math.random() * symbols.length - 1).toFixed(0);
+        code += symbols[+index];
+    }
+
+    return code;
 }

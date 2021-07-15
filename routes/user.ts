@@ -38,6 +38,7 @@ userRouter.post('/login', async (req: Request, res: Response) => {
 
         await validateRecaptcha(req.body.token);
         await user.loadFromDB(req.body.login, req.body.password);
+        const refresh = await user.compareRefreshToken('');
 
         const payload: IUserTokenPayload = {
             host: await util.promisify(bcrypt.hash)(req.hostname, 10) as string,
@@ -48,6 +49,7 @@ userRouter.post('/login', async (req: Request, res: Response) => {
         };
         const webtoken = await jwtSign(payload);
         res.status(200).json({
+            refresh,
             id: user.dbid,
             token: webtoken,
             login: user.login,
@@ -55,8 +57,6 @@ userRouter.post('/login', async (req: Request, res: Response) => {
             learning_languages: user.learningLanguages.map(lang => lang.dbid)
         });
     } catch (error) {
-        console.error(error);
-
         res.status(400).json(error);
     }
 });
@@ -110,8 +110,6 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
             token: webtoken
         });
     } catch (error) {
-        console.error(error);
-
         if (error.name === 'USER_UPDATE_ERROR') {
             res.status(401).json(error);
         } else {
@@ -128,8 +126,6 @@ userRouter.post('/modify-keyboard-settings', async (req: Request, res: Response)
 
         res.json({...req.body});
     } catch (error) {
-        console.error(error);
-
         if (error.name === 'USER_NOT_FOUND') {
             res.status(401).json(error);
         } else {

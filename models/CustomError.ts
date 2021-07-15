@@ -1,10 +1,12 @@
 export class CustomError extends Error {
     data: any;
 
-    constructor(name: ErrorName, data?: any, message?: string) {
-        super(message || data?.message);
+    constructor(name: ErrorName, data?: any) {
+        super(data?.message);
         super.name = name;
         this.data = data;
+
+        console.error(name, data);
     }
 }
 
@@ -36,3 +38,4 @@ export type ErrorName = 'DATABASE_ERROR'
     | 'USER_CHECK_PASSWORD_ERROR'
     | 'USER_SECURITY_CHECK_ERROR'
     | 'KEYMAPPER_LOAD_BY_LANGUAGE_ID'
+    | 'REFRESH_TOKEN_COMPARE_ERROR'

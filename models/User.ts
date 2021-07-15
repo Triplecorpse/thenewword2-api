@@ -6,6 +6,7 @@ import {ICRUDEntity} from '../interfaces/ICRUDEntity';
 import {Language} from './Language';
 import {languages} from '../const/constData';
 import {CustomError} from './CustomError';
+import {generateRefreshToken} from "../services/jwt";
 
 const saltRounds = 10;
 
@@ -108,10 +109,12 @@ export class User implements ICRUDEntity<IUserDto> {
             }
         } else {
             try {
-                const user = await queryDatabase('INSERT INTO tnw2.users (login, password, email) VALUES($1, $2, $3) RETURNING *', [
+                const refreshToken = await util.promisify(bcrypt.hash)(generateRefreshToken(), saltRounds) as string;
+                const user = await queryDatabase('INSERT INTO tnw2.users (login, password, email, active_refresh_token) VALUES($1, $2, $3, $4) RETURNING *', [
                     this.login,
                     this.passwordHash,
-                    this.email
+                    this.email,
+                    refreshToken
                 ]);
 
                 this.dbid = user[0].id;
@@ -191,6 +194,20 @@ export class User implements ICRUDEntity<IUserDto> {
             return await queryDatabase(query, [this.dbid]).then();
         } catch (error) {
             throw new CustomError('GENERIC_DB_ERROR', error);
+        }
+    }
+
+    async compareRefreshToken(refreshToken: string): Promise<{ compareResult: boolean, newToken: string }> {
+        try {
+            const result = await queryDatabase('SELECT active_refresh_token from tnw2.users WHERE id=$1', [this.dbid]);
+            const token = result[0]?.active_refresh_token;
+            const newToken = await util.promisify(bcrypt.hash)(generateRefreshToken(), saltRounds) as string;
+            await queryDatabase('UPDATE tnw2.users SET active_refresh_token=$1 WHERE id=$2', [newToken, this.dbid]);
+            const compareResult = await util.promisify(bcrypt.compare)(refreshToken, token);
+
+            return {compareResult, newToken};
+        } catch (error) {
+            throw new CustomError('REFRESH_TOKEN_COMPARE_ERROR', error);
         }
     }
 

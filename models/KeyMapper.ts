@@ -56,8 +56,6 @@ export class KeyMapper implements IReadOnlyEntity<KeyMapper, ISymbolDto> {
                 return keyMapper;
             });
         } catch (error) {
-            console.error(error);
-
             throw new CustomError('KEYMAPPER_LOAD_BY_LANGUAGE_ID', error);
         }
     }

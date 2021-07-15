@@ -63,8 +63,14 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 app.use(async (req: Request, res: Response, next: NextFunction) => {
-    if (req.query.token) {
-        req.user = await jwtVerify(req.query.token as string, req.hostname, req.ip, req.get('user-agent') as string) as User;
+    const authentication = req.header('Authentication');
+
+    if (authentication) {
+        const result = await jwtVerify(authentication, req.hostname, req.ip, req.get('user-agent') as string);
+
+        if (result instanceof User) {
+            req.user = result;
+        }
     }
 
     next();

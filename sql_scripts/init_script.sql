@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS tnw2.users (
     email text NOT NULL UNIQUE CHECK(email != ''),
     created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
     last_modified_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
-    last_issued_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
+    last_issued_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
+    active_refresh_token char(60) NOT NULL
 );
 CREATE TABLE IF NOT EXISTS tnw2.words (
     id serial PRIMARY KEY,
