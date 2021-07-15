@@ -5,8 +5,6 @@ import {jwtSign} from '../services/jwt';
 import {User} from '../models/User';
 import {validateRecaptcha} from '../services/recaptcha';
 import {CustomError} from '../models/CustomError';
-import * as util from 'util';
-import * as bcrypt from 'bcrypt';
 
 export const userRouter = express.Router();
 
@@ -38,16 +36,14 @@ userRouter.post('/login', async (req: Request, res: Response) => {
 
         await validateRecaptcha(req.body.token);
         await user.loadFromDB(req.body.login, req.body.password);
+
         const refresh = await user.compareRefreshToken('');
 
         const payload: IUserTokenPayload = {
-            host: await util.promisify(bcrypt.hash)(req.hostname, 10) as string,
-            IP: await util.promisify(bcrypt.hash)(req.ip, 10) as string,
-            UA: await util.promisify(bcrypt.hash)(req.get('user-agent'), 10) as string,
             id: user.dbid as number,
             login: req.body.login
         };
-        const webtoken = await jwtSign(payload);
+        const webtoken = await jwtSign(payload, req.hostname, req.ip, req.get('user-agent')!);
         res.status(200).json({
             refresh,
             id: user.dbid,
@@ -94,13 +90,10 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
         await user.save();
 
         const payload: IUserTokenPayload = {
-            host: await util.promisify(bcrypt.hash)(req.hostname, 10) as string,
-            IP: await util.promisify(bcrypt.hash)(req.ip, 10) as string,
-            UA: await util.promisify(bcrypt.hash)(req.get('user-agent'), 10) as string,
             id: user.dbid as number,
             login: req.body.login
         };
-        const webtoken = await jwtSign(payload);
+        const webtoken = await jwtSign(payload, req.hostname, req.ip, req.get('user-agent')!);
 
         delete user.email;
         delete user.password;

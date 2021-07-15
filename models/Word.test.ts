@@ -36,13 +36,13 @@ describe('Word class', () => {
 
     describe('Save method', () => {
         it('Should query db for create if id is not assigned', async () => {
-            spy.mockResolvedValueOnce([]);
+            spy.mockResolvedValueOnce([{id: 1, word: 'word'}]);
             await word.save();
             expect(spy).toBeCalledWith(expect.stringContaining('INSERT INTO tnw2.words'), expect.arrayContaining([]));
         });
 
         it('Should query db for update if id is assigned', async () => {
-            spy.mockResolvedValueOnce([]);
+            spy.mockResolvedValueOnce([{id: 1, word: 'word'}]);
             word.dbid = 1;
             await word.save();
             expect(spy).toBeCalledWith(expect.stringContaining('UPDATE tnw2.words'), expect.arrayContaining([1]));

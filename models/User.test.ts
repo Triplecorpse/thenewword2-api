@@ -32,7 +32,6 @@ describe('User class', () => {
                 .catch(error => {
                     expect(error.name).toBe('USER_NOT_FOUND')
                 });
-            expect(user.login).not.toBeDefined();
         });
 
         it('Should throw PASSWORD_CHECK_FAILED error if a user was found but password doesn\'t match', async () => {
@@ -44,13 +43,12 @@ describe('User class', () => {
                 .catch(error => {
                     expect(error.name).toBe('PASSWORD_CHECK_FAILED');
                 });
-            expect(user.login).not.toBeDefined();
         });
 
         it('Should create valid user object if user was found and password is \'restore\' and password in the DB is \'to_restore\'', async () => {
             spy = spy.mockResolvedValueOnce([{login: 'login', password: 'to_restore'}]);
             await user.loadFromDB('login', 'restore')
-            expect(user.login).toBeDefined();
+            expect(user.login).toBe('login');
         });
     });
 
@@ -110,10 +108,11 @@ describe('User class', () => {
     describe('ReplaceWith method', () => {
         it('Should replace user\'s fields with new ones', () => {
             user.replaceWith({
+                id: 1,
                 login: 'login2',
                 password: 'password',
                 learning_languages: [2, 3, 4],
-                native_language: 1,
+                native_languages: [1],
                 email: 'email@domain.com',
                 new_password: 'new_password'
             });

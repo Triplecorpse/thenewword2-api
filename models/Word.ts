@@ -36,7 +36,6 @@ export class Word implements ICRUDEntity<IWordDto> {
 
     async save(): Promise<void> {
         try {
-
             let query;
             let relationUserQuery;
             const params = [
@@ -68,7 +67,7 @@ export class Word implements ICRUDEntity<IWordDto> {
                 await queryDatabase(relationUserQuery, [this.userCreated?.dbid, this.dbid]);
             }
 
-            return await queryDatabase(query, params).then();
+            await queryDatabase(query, params);
         } catch (error) {
             throw new CustomError('SAVE_FAILED', error);
         }

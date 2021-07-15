@@ -7,11 +7,18 @@ import * as bcrypt from "bcrypt";
 
 dotenv.config();
 
-export async function jwtSign(payload: any): Promise<string> {
-    return Promise.resolve(jwt.sign(payload, process.env.WEB_TOKEN as string, {expiresIn: '15m'}));
+export async function jwtSign(payload: any, host: string, ip: string, ua: string): Promise<string> {
+    const data: IUserTokenPayload = {
+        ...payload,
+        host: await util.promisify(bcrypt.hash)(host, 10) as string,
+        IP: await util.promisify(bcrypt.hash)(ip, 10) as string,
+        UA: await util.promisify(bcrypt.hash)(ua, 10) as string,
+    };
+
+    return Promise.resolve(jwt.sign(data, process.env.WEB_TOKEN as string, {expiresIn: '15m'}));
 }
 
-export function jwtVerify(token: string, host: string, ip: string, ua: string): Promise<User | null> {
+export function jwtDecodeAndVerifyUser(token: string, host: string, ip: string, ua: string): Promise<User | null> {
     if (!token) {
         return Promise.resolve(null);
     }
@@ -22,9 +29,9 @@ export function jwtVerify(token: string, host: string, ip: string, ua: string): 
 
         if (verificationResult) {
             const tokenMatchesUserParams =
-                await util.promisify(bcrypt.compare)(host, verificationResult.host) &&
-                await util.promisify(bcrypt.compare)(ip, verificationResult.IP) &&
-                await util.promisify(bcrypt.compare)(ua, verificationResult.UA);
+                await util.promisify(bcrypt.compare)(host, verificationResult.host!) &&
+                await util.promisify(bcrypt.compare)(ip, verificationResult.IP!) &&
+                await util.promisify(bcrypt.compare)(ua, verificationResult.UA!);
 
             if (tokenMatchesUserParams) {
                 const user = new User();
@@ -39,14 +46,6 @@ export function jwtVerify(token: string, host: string, ip: string, ua: string): 
 
         resolve(null);
     });
-}
-
-export async function jwtDecode<T = any>(token: string): Promise<T> {
-    if (!token) {
-        return Promise.reject();
-    }
-
-    return await util.promisify(jwt.verify)(token, process.env.WEB_TOKEN as string) as any;
 }
 
 export function generateRefreshToken(): string {

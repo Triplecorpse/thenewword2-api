@@ -4,7 +4,7 @@ import {userRouter} from './routes/user';
 import * as bodyParser from 'body-parser';
 import {NextFunction, Request, Response} from 'express';
 import {connectToDatabase, queryDatabase} from './services/db';
-import {jwtVerify} from './services/jwt';
+import {jwtDecodeAndVerifyUser} from './services/jwt';
 import {wordRouter} from './routes/word';
 import {User} from './models/User';
 import {genders, keyMappers, languages, speechParts} from './const/constData';
@@ -66,7 +66,7 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
     const authentication = req.header('Authentication');
 
     if (authentication) {
-        const result = await jwtVerify(authentication, req.hostname, req.ip, req.get('user-agent') as string);
+        const result = await jwtDecodeAndVerifyUser(authentication, req.hostname, req.ip, req.get('user-agent') as string);
 
         if (result instanceof User) {
             req.user = result;

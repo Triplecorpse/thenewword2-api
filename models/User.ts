@@ -25,8 +25,7 @@ export class User implements ICRUDEntity<IUserDto> {
 
     async loadFromDB(loginOrEmail: string, password: string): Promise<void> {
         try {
-            const query = 'SELECT tnw2.users.id, tnw2.users.login, tnw2.users.email, tnw2.users.password, tnw2.relation_users_learning_language.language_id AS learning_languages_ids, tnw2.relation_users_native_language.language_id AS native_languages_ids FROM tnw2.users LEFT JOIN tnw2.relation_users_learning_language ON tnw2.relation_users_learning_language.user_id = tnw2.users.id LEFT JOIN tnw2.relation_users_native_language ON tnw2.relation_users_native_language.user_id = tnw2.users.id WHERE login = $1;';
-            const dbResult = await queryDatabase(query, [loginOrEmail]);
+            const dbResult = await queryDatabase('SELECT tnw2.users.id, tnw2.users.login, tnw2.users.email, tnw2.users.password, tnw2.relation_users_learning_language.language_id AS learning_languages_ids, tnw2.relation_users_native_language.language_id AS native_languages_ids FROM tnw2.users LEFT JOIN tnw2.relation_users_learning_language ON tnw2.relation_users_learning_language.user_id = tnw2.users.id LEFT JOIN tnw2.relation_users_native_language ON tnw2.relation_users_native_language.user_id = tnw2.users.id WHERE login = $1 OR email = $1', [loginOrEmail]);
 
             if (!dbResult.length) {
                 throw new CustomError('USER_NOT_FOUND');
@@ -49,7 +48,7 @@ export class User implements ICRUDEntity<IUserDto> {
                 this.learningLanguages = languages.filter(lang => learningLanguages.includes(lang.dbid));
             }
         } catch (error) {
-            if (error.name === 'USER_NOT_FOUND') {
+            if (['USER_NOT_FOUND', 'PASSWORD_CHECK_FAILED'].includes(error.name)) {
                 throw error;
             }
 
