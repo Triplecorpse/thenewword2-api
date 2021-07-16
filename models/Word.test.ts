@@ -1,7 +1,6 @@
 import {Word} from './Word';
 import * as db from '../services/db';
 import {IWordDto} from "../interfaces/dto/IWordDto";
-import {IUserDto} from "../interfaces/dto/IUserDto";
 
 jest.mock('../services/db');
 

@@ -49,21 +49,21 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
     }
 
     async save(): Promise<void> {
-        if (!this.user) {
-            throw new CustomError('SAVE_FAILED');
-        }
-
-        let query;
-        let userRelationQuery;
-
-        if (this.dbid) {
-            query = 'UPDATE tnw2.word_sets SET title=$1, original_language_id=$2, translated_language_id=$3 last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$5 RETURNING *';
-        } else {
-            query = 'INSERT INTO tnw2.word_sets (title, original_language_id, translated_language_id, user_created_id) VALUES ($1, $2, $3, $4) RETURNING *';
-            userRelationQuery = 'INSERT INTO tnw2.relation_users_word_sets (user_id, word_set_id) VALUES ($1, $2)';
-        }
-
         try {
+            if (!this.user) {
+                throw new CustomError('SAVE_FAILED');
+            }
+
+            let query;
+            let userRelationQuery;
+
+            if (this.dbid) {
+                query = 'UPDATE tnw2.word_sets SET title=$1, original_language_id=$2, translated_language_id=$3 last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$5 RETURNING *';
+            } else {
+                query = 'INSERT INTO tnw2.word_sets (title, original_language_id, translated_language_id, user_created_id) VALUES ($1, $2, $3, $4) RETURNING *';
+                userRelationQuery = 'INSERT INTO tnw2.relation_users_word_sets (user_id, word_set_id) VALUES ($1, $2)';
+            }
+
             const wordsetResult = await queryDatabase(query, [this.name, this.originalLanguage.dbid, this.translatedLanguage.dbid, this.user.dbid]);
 
             this.dbid = wordsetResult[0].id;
@@ -72,6 +72,7 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
                 await queryDatabase(userRelationQuery, [this.user.dbid, this.dbid]);
             }
         } catch (error) {
+            console.log(error);
             throw new CustomError('SAVE_FAILED', error);
         }
     }
