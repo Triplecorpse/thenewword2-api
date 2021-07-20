@@ -15,7 +15,7 @@ export async function jwtSign(payload: any, host: string, ip: string, ua: string
         UA: await util.promisify(bcrypt.hash)(ua, 10) as string,
     };
 
-    return Promise.resolve(jwt.sign(data, process.env.WEB_TOKEN as string, {expiresIn: '15m'}));
+    return Promise.resolve(jwt.sign(data, process.env.WEB_TOKEN as string/*, {expiresIn: '15m'}*/));
 }
 
 export function jwtDecodeAndVerifyUser(token: string, host: string, ip: string, ua: string): Promise<User | null> {

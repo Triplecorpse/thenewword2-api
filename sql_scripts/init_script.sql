@@ -1,4 +1,5 @@
 CREATE SCHEMA IF NOT EXISTS tnw2 AUTHORIZATION postgres;
+CREATE TYPE word_status AS ENUM ('right', 'wrong', 'skipped');
 
 CREATE TABLE IF NOT EXISTS tnw2.speech_parts
 (
@@ -58,10 +59,13 @@ CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
     id serial PRIMARY KEY,
     user_id integer NOT NULL REFERENCES tnw2.users(id),
     word_id integer NOT NULL REFERENCES tnw2.words(id),
-    times_right integer DEFAULT 0,
-    times_wrong integer DEFAULT 0,
-    times_skipped integer DEFAULT 0,
-    last_issued_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
+    status word_status NOT NULL,
+    created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tnw2.exercise_in_progress (
+    id serial PRIMARY KEY,
+    user_id integer NOT NULL REFERENCES tnw2.users(id),
+    word_id integer NOT NULL REFERENCES tnw2.words(id)
 );
 CREATE TABLE IF NOT EXISTS tnw2.special_letters (
     id serial PRIMARY KEY,

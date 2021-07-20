@@ -1,78 +1,89 @@
-import {ICRUDEntity} from "../interfaces/ICRUDEntity";
 import {queryDatabase} from "../services/db";
 import {CustomError} from "./CustomError";
 import {User} from "./User";
 import {Word} from "./Word";
+import {TWordStatStatus} from "../types/wordStatStatus";
 
-export class WordStat implements ICRUDEntity {
-    dbid: number;
-    user: User;
-    word: Word;
-    right = 0;
-    wrong = 0;
-    skipped = 0;
+export interface IWordStatDto {
+    id: number;
+    word_id: number;
+    user_id: number;
+    status: TWordStatStatus;
+    timestamp_created: string;
+}
 
-    convertToDto(): any {
-        return undefined;
-    }
+export class WordStat {
+    id: number;
+    userId: number;
+    wordId: number;
+    status: TWordStatStatus
+    timestamp: Date;
 
-    async loadFromDB(wordId: number, userId: number): Promise<void> {
-        try {
-            const result = await queryDatabase('SELECT * FROM tnw2.word_statistics WHERE user_id=$1 AND word_id=$2', [userId, wordId]);
-
-            this.word = await Word.fromDb(wordId);
-            this.user = await User.fromDb(userId);
-
-            if (!result[0]) {
-                return;
-            }
-
-            this.dbid = result[0].id;
-            this.wrong = result[0].times_wrong;
-            this.right = result[0].times_right;
-            this.skipped = result[0].times_skipped;
-        } catch (error) {
-            throw new CustomError('WORD_STATISTIC_ERROR', error)
+    constructor(dto?: IWordStatDto) {
+        if (dto) {
+            this.id = dto.id;
+            this.userId = dto.user_id;
+            this.wordId = dto.word_id;
+            this.status = dto.status;
+            this.timestamp = new Date(dto.timestamp_created)
         }
     }
 
-    remove(): Promise<void> {
-        return Promise.resolve(undefined);
-    }
-
-    replaceWith(entity: any): void {
+    convertToDto(): IWordStatDto {
+        return {
+            id: this.id,
+            timestamp_created: this.timestamp.toISOString(),
+            status: this.status,
+            word_id: this.wordId,
+            user_id: this.userId
+        }
     }
 
     async save(): Promise<void> {
         try {
             let result;
-            if (this.dbid) {
-                result = await queryDatabase('UPDATE tnw2.word_statistics SET times_right=$1, times_wrong=$2, times_skipped=$3, last_issued_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$4 RETURNING id', [this.right, this.wrong, this. skipped, this.dbid]);
+
+            if (this.id && this.status === 'skipped') {
+                result = await queryDatabase('UPDATE tnw2.word_statistics SET status=$1, created_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$2 RETURNING id', [this.status, this.id]);
+            } else if (!this.id) {
+                result = await queryDatabase('INSERT INTO tnw2.word_statistics (user_id, word_id, status) VALUES ($1, $2, $3) RETURNING id', [this.userId, this.wordId, this.status]);
             } else {
-                result = await queryDatabase('INSERT INTO tnw2.word_statistics (user_id, word_id, times_wrong, times_right, times_skipped) VALUES ($1, $2, $3, $4, $5) RETURNING id', [this.user.dbid, this.word.dbid, this.wrong, this.right, this. skipped]);
+                throw new CustomError('WORD_STATISTIC_SAVE_ERROR', {message: 'Cannon update: status should be skipped'})
             }
 
-            this.dbid = result[0].id;
+            this.id = result[0].id;
         } catch (error) {
-            throw new CustomError('WORD_STATISTIC_ERROR', error);
+            throw new CustomError('WORD_STATISTIC_SAVE_ERROR', error);
         }
     }
 
     static async fromDb(id: number): Promise<WordStat> {
         try {
             const result = await queryDatabase('SELECT * FROM tnw2.word_statistics WHERE id=$1', [id]);
-            const wordStat = new WordStat();
-
-            wordStat.dbid = result[0].id;
-            wordStat.user = await User.fromDb(result[0].user_id);
-            wordStat.word = await Word.fromDb(result[0].word_id);
-            wordStat.wrong = result[0].times_wrong;
-            wordStat.right = result[0].times_right;
-            wordStat.skipped = result[0].times_skipped;
-
-            return wordStat;
+            return new WordStat({
+                id: result[0].id,
+                user_id: result[0].user_id,
+                word_id: result[0].word_id,
+                status: result[0].status,
+                timestamp_created: result[0].created_at
+            });
         } catch (error) {
-            throw new CustomError('WORD_STATISTIC_ERROR', error)
+            throw new CustomError('WORD_STATISTIC_LOAD_ERROR', error)
+        }
+    }
+
+    static async byUserAndWord(user_id: number, word_id: number): Promise<WordStat[]> {
+        try {
+            const result = await queryDatabase('SELECT * FROM tnw2.word_statistics WHERE user_id=$1 AND word_id=$2', [user_id, word_id]);
+            return  result.map(resultItem => new WordStat({
+                id: resultItem.id,
+                timestamp_created: resultItem.created_at,
+                status: resultItem.status,
+                word_id: resultItem.wordId,
+                user_id: resultItem.user_id
+            }));
+        } catch (error) {
+            throw new CustomError('WORD_STATISTIC_LOAD_ERROR', error)
         }
     }
 }

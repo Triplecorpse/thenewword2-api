@@ -1,8 +1,6 @@
 import {User} from '../models/User';
 import {jwtSign, jwtDecodeAndVerifyUser} from './jwt';
 import {IUserTokenPayload} from "../interfaces/IUserTokenPayload";
-import * as util from "util";
-import * as bcrypt from "bcrypt";
 
 jest.mock('../models/User');
 

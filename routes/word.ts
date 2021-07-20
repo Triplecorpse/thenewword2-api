@@ -133,12 +133,19 @@ wordRouter.get('/exercise', async (req: Request, res: Response) => {
         if (!req.user) {
             throw new CustomError('USER_NOT_FOUND');
         }
+        const currentExercise = await Word.getExerciseInProgressItems(req.user.dbid!);
+
+        if (currentExercise.length) {
+            res.json(currentExercise.map(word => word.convertToDto()))
+            return;
+        }
+
         const words = await Word.getWordsToExercise({
             wordset: req.query.wordset ? (req.query.wordset as string).split(',').map(ws => +ws) : [],
             limit: +(req.query.limit as string),
             language: +(req.query.language as string),
             threshold: +(req.query.threshold as string)
-        }, req.user.dbid as number);
+        }, req.user.dbid!);
 
         res.json(words.map(word => word.convertToDto()));
     } catch (error) {
@@ -150,7 +157,25 @@ wordRouter.get('/exercise', async (req: Request, res: Response) => {
     }
 });
 
-wordRouter.post('/exercise', async (req: Request, res: Response) => {
+wordRouter.post('/set-exercise', async (req: Request, res: Response) => {
+    try {
+        if (!req.user) {
+            throw new CustomError('USER_NOT_FOUND');
+        }
+
+        await Word.setExerciseInProgressItems(req.user.dbid!, req.body);
+
+        res.json({success: true});
+    } catch (error) {
+        if (error.name === 'USER_NOT_FOUND') {
+            res.sendStatus(401);
+        } else {
+            res.status(500).json(error);
+        }
+    }
+});
+
+wordRouter.post('/set-stat', async (req: Request, res: Response) => {
     try {
         if (!req.user) {
             throw new CustomError('USER_NOT_FOUND')
@@ -161,7 +186,6 @@ wordRouter.post('/exercise', async (req: Request, res: Response) => {
         }
 
         const fixingId = req.body.statId;
-        const prevState = req.body.prevState;
         const yourWord = new Word(req.body.word);
         const dbWord = await Word.fromDb(req.body.word.id);
         const diff = Diff.diffChars(yourWord.word?.toLowerCase() as string, dbWord.word?.toLowerCase() as string);
@@ -178,30 +202,25 @@ wordRouter.post('/exercise', async (req: Request, res: Response) => {
         };
         let wordStat: WordStat;
 
+        await Word.removeExerciseInProgressItem(req.user.dbid!, dbWord.dbid!);
+
         if (fixingId) {
             wordStat = await WordStat.fromDb(fixingId);
         } else {
-            wordStat = new WordStat();
-            await wordStat.loadFromDB(dbWord.dbid as number, req.user.dbid as number);
+            wordStat = new WordStat({
+                id: 0,
+                status: response.status,
+                word_id: dbWord.dbid!,
+                user_id: req.user.dbid!,
+                timestamp_created: (new Date()).toISOString()
+            });
         }
 
-        if (response.status === 'right') {
-            wordStat.right++;
-        } else if (response.status === 'wrong') {
-            wordStat.wrong++;
-        } else if (response.status === 'skipped') {
-            wordStat.skipped++;
-        }
-
-        if (prevState === 'wrong') {
-            wordStat.wrong--;
-        } else if (prevState === 'skipped') {
-            wordStat.skipped--;
-        }
+        wordStat.status = response.status;
 
         await wordStat.save();
 
-        response.stat_id = wordStat.dbid;
+        response.stat_id = wordStat.id;
 
         res.json(response);
     } catch (error) {

@@ -63,10 +63,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 app.use(async (req: Request, res: Response, next: NextFunction) => {
-    const authentication = req.header('Authentication');
+    const authorization = req.header('Authorization');
 
-    if (authentication) {
-        const result = await jwtDecodeAndVerifyUser(authentication, req.hostname, req.ip, req.get('user-agent') as string);
+    if (authorization) {
+        const result = await jwtDecodeAndVerifyUser(authorization.split(' ')[1], req.hostname, req.ip, req.get('user-agent') as string);
 
         if (result instanceof User) {
             req.user = result;

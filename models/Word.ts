@@ -262,48 +262,47 @@ export class Word implements ICRUDEntity<IWordDto> {
 
             overAllResult = [...new Set([...filterByWordsetResult, ...filterByLanguageResult])];
 
-            return Promise.all(overAllResult.map(id => Word.fromDb(id)));
+            const words: Word[] = await Promise.all(overAllResult.map(id => Word.fromDb(id)));
+
+
+            return words;
         } catch (error) {
             throw new CustomError('GET_WORDS_ERROR', error);
         }
     }
 
-    async setStatistic(userId: number, stat: 'right' | 'wrong' | 'skipped', isReplacingId?: number) {
+    static async removeExerciseInProgressItem(userId: number, wordId: number) {
+        console.log(userId, wordId);
         try {
-            const existingStatResult = await queryDatabase('SELECT * FROM tnw2.word_statistics WHERE user_id=$1 AND word_id=$2', [userId, this.dbid]);
-            const existingStat = existingStatResult[0];
-
-            if (existingStat) {
-                let queryPart = '';
-
-                if (stat === 'right') {
-                    queryPart = 'times_right=times_right+1';
-                } else if (stat === 'wrong') {
-                    queryPart = 'times_wrong=times_wrong+1';
-                } else if (stat === 'skipped') {
-                    queryPart = 'times_skipped=times_skipped+1';
-                } else {
-                    throw new CustomError('WORD_STATISTIC_ERROR', {message: 'stat should be 1 of 3 states: right, wrong or skipped'})
-                }
-
-                await queryDatabase(`UPDATE tnw2.word_statistics SET ${queryPart} WHERE user_id=$1 AND word_id=$2 RETURNING *`, [userId, this.dbid]);
-            } else {
-                let queryPart = '';
-
-                if (stat === 'right') {
-                    queryPart = 'times_right';
-                } else if (stat === 'wrong') {
-                    queryPart = 'times_wrong';
-                } else if (stat === 'skipped') {
-                    queryPart = 'times_skipped';
-                } else {
-                    throw new CustomError('WORD_STATISTIC_ERROR', {message: 'stat should be 1 of 3 states: right, wrong or skipped'})
-                }
-
-                await queryDatabase(`INSERT INTO tnw2.word_statistics (user_id, word_id, ${queryPart}) VALUES ($1, $2, $3) RETURNING *`, [userId, this.dbid, 1]);
-            }
+            await queryDatabase('DELETE FROM tnw2.exercise_in_progress WHERE user_id=$1 AND word_id=$2', [userId, wordId]);
         } catch (error) {
-            throw new CustomError('WORD_STATISTIC_ERROR', error);
+            throw new CustomError('EXERCISE_IN_PROGRESS_REMOVE_ERROR', error);
+        }
+    }
+
+    static async getExerciseInProgressItems(userId: number): Promise<Word[]> {
+        try {
+            const exerciseInProgress = await queryDatabase('SELECT word_id as id FROM tnw2.exercise_in_progress WHERE user_id=$1', [userId]);
+
+            return await Promise.all(exerciseInProgress.map(({id}) => Word.fromDb(id)));
+        } catch (error) {
+            throw new CustomError('EXERCISE_IN_PROGRESS_GET_ERROR', error);
+        }
+    }
+
+    static async setExerciseInProgressItems(userId: number, wordIds: number[]) {
+        try {
+            let queryParts: string[] = [];
+            const queryPartParams: number[] = [];
+
+            wordIds.forEach((wordId, index) => {
+                queryParts.push(`($1, $${index + 2})`);
+                queryPartParams.push(wordId!);
+            });
+
+            await queryDatabase(`INSERT INTO tnw2.exercise_in_progress (user_id, word_id) VALUES ${queryParts.join(',')}`, [userId, ...queryPartParams]);
+        } catch (error) {
+            throw new CustomError('EXERCISE_IN_PROGRESS_SET_ERROR', error);
         }
     }
 }
