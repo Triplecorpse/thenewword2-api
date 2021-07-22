@@ -22,7 +22,7 @@ declare global {
     namespace Express {
         export interface Request {
             isDevMode?: boolean;
-            user?: User;
+            user?: User | null;
         }
     }
 }
@@ -66,10 +66,12 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
     const authorization = req.header('Authorization');
 
     if (authorization) {
-        const result = await jwtDecodeAndVerifyUser(authorization.split(' ')[1], req.hostname, req.ip, req.get('user-agent') as string);
+        try {
+            await jwtDecodeAndVerifyUser(authorization.split(' ')[1], req.hostname, req.ip, req.get('user-agent')!);
+        } catch (error) {
+            res.status(401).json(error);
 
-        if (result instanceof User) {
-            req.user = result;
+            return;
         }
     }
 

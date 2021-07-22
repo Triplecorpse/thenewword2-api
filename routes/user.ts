@@ -45,7 +45,7 @@ userRouter.post('/login', async (req: Request, res: Response) => {
         };
         const webtoken = await jwtSign(payload, req.hostname, req.ip, req.get('user-agent')!);
         res.status(200).json({
-            refresh,
+            refresh: refresh.newToken,
             id: user.dbid,
             token: webtoken,
             login: user.login,
@@ -54,6 +54,14 @@ userRouter.post('/login', async (req: Request, res: Response) => {
         });
     } catch (error) {
         res.status(400).json(error);
+    }
+});
+
+userRouter.get('/refresh', async (req: Request, res: Response) => {
+    try {
+
+    } catch (error) {
+        res.status(500).json(error);
     }
 });
 
