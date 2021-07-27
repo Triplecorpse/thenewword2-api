@@ -32,6 +32,13 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
             throw new CustomError('ID_IN_EDIT');
         }
 
+        if (req.body.id_subscribing) {
+            await Word.subscribe(req.body.id_subscribing, req.user.dbid!);
+            const word = await Word.fromDb(req.body.id_subscribing);
+            res.json(word.convertToDto());
+            return;
+        }
+
         const word = new Word(req.body, req.user);
         await word.save();
 

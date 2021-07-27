@@ -223,9 +223,7 @@ export class Word implements ICRUDEntity<IWordDto> {
     }
 
     static async subscribe(wordId: number, userId: number) {
-        const query = 'INSERT INTO tnw2.relation_words_users (word_id, user_id) SET ($1, $2)';
-
-        return queryDatabase(query, [wordId, userId]).then();
+        return queryDatabase('INSERT INTO tnw2.relation_words_users (word_id, user_id) VALUES ($1, $2)', [wordId, userId]).then();
     }
 
     static async unsubscribe(wordId: number, userId: number) {
