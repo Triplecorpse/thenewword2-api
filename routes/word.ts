@@ -35,6 +35,11 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
         if (req.body.id_subscribing) {
             await Word.subscribe(req.body.id_subscribing, req.user.dbid!);
             const word = await Word.fromDb(req.body.id_subscribing);
+
+            if (req.body.word_set_id) {
+                await word.saveToWordSet(req.body.word_set_id);
+            }
+
             res.json(word.convertToDto());
             return;
         }
@@ -97,6 +102,11 @@ wordRouter.put('/edit', async (req: Request, res: Response) => {
         }
 
         const word = await Word.fromDb(req.body.id);
+
+        if (word.userCreated?.dbid !== req.user.dbid) {
+            throw new CustomError('USER_CANNOT_EDIT_OTHER_USER\'S ENTITIES');
+        }
+
         word.replaceWith(req.body);
         await word.save();
         res.status(200).json(word.convertToDto());
