@@ -57,9 +57,22 @@ userRouter.post('/login', async (req: Request, res: Response) => {
     }
 });
 
-userRouter.get('/refresh', async (req: Request, res: Response) => {
+userRouter.post('/refresh', async (req: Request, res: Response) => {
     try {
+        const user = await User.fromDb(req.body.user_id);
+        const refresh = await user.compareRefreshToken(req.body.refresh);
 
+        if (!refresh) {
+            throw new CustomError('REFRESH_TOKEN_COMPARE_ERROR');
+        }
+
+        const payload: IUserTokenPayload = {
+            id: user.dbid as number,
+            login: user.login
+        };
+        const token = await jwtSign(payload, req.hostname, req.ip, req.get('user-agent')!);
+
+        res.json({refresh: refresh.newToken, token})
     } catch (error) {
         res.status(500).json(error);
     }

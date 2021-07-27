@@ -200,8 +200,9 @@ export class User implements ICRUDEntity<IUserDto> {
         try {
             const result = await queryDatabase('SELECT active_refresh_token from tnw2.users WHERE id=$1', [this.dbid]);
             const token = result[0]?.active_refresh_token;
-            const newToken = await util.promisify(bcrypt.hash)(generateRefreshToken(), saltRounds) as string;
-            await queryDatabase('UPDATE tnw2.users SET active_refresh_token=$1 WHERE id=$2', [newToken, this.dbid]);
+            const newToken = generateRefreshToken();
+            const newTokenHashed = await util.promisify(bcrypt.hash)(newToken, saltRounds) as string;
+            await queryDatabase('UPDATE tnw2.users SET active_refresh_token=$1 WHERE id=$2', [newTokenHashed, this.dbid]);
             const compareResult = await util.promisify(bcrypt.compare)(refreshToken, token);
 
             return {compareResult, newToken};
