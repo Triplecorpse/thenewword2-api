@@ -72,7 +72,6 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
                 await queryDatabase(userRelationQuery, [this.user.dbid, this.dbid]);
             }
         } catch (error) {
-            console.log(error);
             throw new CustomError('SAVE_FAILED', error);
         }
     }

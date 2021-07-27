@@ -65,9 +65,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(async (req: Request, res: Response, next: NextFunction) => {
     const authorization = req.header('Authorization');
 
-    console.log(req.url);
-    console.log(authorization);
-
     if (authorization) {
         try {
             req.user = await jwtDecodeAndVerifyUser(authorization.split(' ')[1], req.hostname, req.ip, req.get('user-agent')!);

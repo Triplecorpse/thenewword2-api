@@ -33,7 +33,7 @@ wordRouter.post('/add', async (req: Request, res: Response) => {
         }
 
         const word = new Word(req.body, req.user);
-        await word.save()
+        await word.save();
 
         if (req.body.word_set_id) {
             await word.saveToWordSet(req.body.word_set_id);
@@ -224,7 +224,6 @@ wordRouter.post('/set-stat', async (req: Request, res: Response) => {
 
         res.json(response);
     } catch (error) {
-        console.log(error);
         if (error.name === 'USER_NOT_FOUND') {
             res.sendStatus(401);
         } else if (error.name === 'WORD_CHECK_ERROR') {

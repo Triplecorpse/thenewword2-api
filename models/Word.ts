@@ -66,8 +66,6 @@ export class Word implements ICRUDEntity<IWordDto> {
             if (relationUserQuery) {
                 await queryDatabase(relationUserQuery, [this.userCreated?.dbid, this.dbid]);
             }
-
-            await queryDatabase(query, params);
         } catch (error) {
             throw new CustomError('SAVE_FAILED', error);
         }
@@ -272,7 +270,6 @@ export class Word implements ICRUDEntity<IWordDto> {
     }
 
     static async removeExerciseInProgressItem(userId: number, wordId: number) {
-        console.log(userId, wordId);
         try {
             await queryDatabase('DELETE FROM tnw2.exercise_in_progress WHERE user_id=$1 AND word_id=$2', [userId, wordId]);
         } catch (error) {
