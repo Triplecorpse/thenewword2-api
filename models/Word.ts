@@ -302,4 +302,15 @@ export class Word implements ICRUDEntity<IWordDto> {
             throw new CustomError('EXERCISE_IN_PROGRESS_SET_ERROR', error);
         }
     }
+
+    static async getByUserInput(word: string, foreignLanguage: number, nativeLanguage: number): Promise<Word[]> {
+        try {
+            const result = await queryDatabase('SELECT id FROM tnw2.words WHERE word=$1 AND original_language_id=$2 AND translated_language_id=$3', [word, foreignLanguage, nativeLanguage]);
+            const result$ = result.map(({id}) => Word.fromDb(id));
+
+            return await Promise.all(result$);
+        } catch (error) {
+            throw new CustomError('GET_WORDS_BY_USER_INPUT_ERROR', error)
+        }
+    }
 }

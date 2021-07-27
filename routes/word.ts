@@ -234,6 +234,25 @@ wordRouter.post('/set-stat', async (req: Request, res: Response) => {
     }
 });
 
+wordRouter.post('/find', async (req: Request, res: Response) => {
+    try {
+        if (!req.user) {
+            throw new CustomError('USER_NOT_FOUND');
+        }
+
+        const {word, foreign_language, native_language} = req.body;
+        const words = await Word.getByUserInput(word, foreign_language, native_language);
+
+        res.send(words.map(word => word.convertToDto()));
+    } catch (error) {
+        if (error.name === 'USER_NOT_FOUND') {
+            res.status(401).json(error);
+        } else {
+            res.status(500).json(error);
+        }
+    }
+});
+
 async function getWordsByQuery(query: string, params: any[], user: User): Promise<Word[]> {
     const wordIds: { id: number }[] = await queryDatabase<{ id: number }>(query, params)
         .catch(error => Promise.reject(error));
