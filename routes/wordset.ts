@@ -1,6 +1,6 @@
 import * as express from 'express';
 import {Request, Response} from 'express';
-import {Wordset} from '../models/Wordset';
+import {IWordSetFilterData, Wordset} from '../models/Wordset';
 import {User} from '../models/User';
 import {CustomError} from '../models/CustomError';
 
@@ -58,7 +58,9 @@ wordsetRouter.get('/get', async (req: Request, res: Response) => {
             throw new CustomError('USER_NOT_FOUND')
         }
 
-        const wordsets = await Wordset.factoryLoadForUser(req.user?.dbid as number);
+        const filter: IWordSetFilterData = req.query;
+
+        const wordsets = await Wordset.factoryLoad(filter);
 
         res.json(wordsets.map(w => w.convertToDto()));
     } catch (error) {

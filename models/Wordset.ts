@@ -6,6 +6,13 @@ import {Language} from "./Language";
 import {queryDatabase} from "../services/db";
 import {languages} from "../const/constData";
 
+export interface IWordSetFilterData {
+    user_created_login?: string;
+    foreign_language_id?: number;
+    native_language_id?: number[];
+    name?: string;
+}
+
 export class Wordset implements ICRUDEntity<IWordSetDto> {
     dbid: number = 0;
     name: string = '';
@@ -91,7 +98,7 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
             wordset.originalLanguage = originalLanguage;
             wordset.translatedLanguage = translatedLanguage;
 
-            const wordCount = await queryDatabase('SELECT count(*) FROM tnw2.relation_words_word_sets WHERE word_set_id=$1',[wordset.dbid]);
+            const wordCount = await queryDatabase('SELECT count(*) FROM tnw2.relation_words_word_sets WHERE word_set_id=$1', [wordset.dbid]);
 
             wordset.wordsCount = +wordCount[0].count;
 
@@ -111,6 +118,51 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
     static async factoryLoadForUser(userId: number): Promise<Wordset[]> {
         try {
             const queryResult = await queryDatabase('SELECT id FROM tnw2.relation_users_word_sets LEFT JOIN tnw2.word_sets ON tnw2.relation_users_word_sets.word_set_id=tnw2.word_sets.id WHERE tnw2.relation_users_word_sets.user_id=$1', [userId]);
+            const result = queryResult.map(({id}) => Wordset.fromDb(id));
+
+            return Promise.all(result);
+        } catch (error) {
+            throw new CustomError('GET_WORDSETS_ERROR', error)
+        }
+    }
+
+    static async factoryLoad(filter: IWordSetFilterData): Promise<Wordset[]> {
+        try {
+            let queryResult;
+            let queryPart = '';
+            let queryPartParams = [];
+            const userIdResult = await queryDatabase('SELECT id FROM tnw2.users WHERE login=$1', [filter.user_created_login]);
+            const userId = userIdResult[0]?.id;
+            let lastIndexUsed = userId ? 1 : 0;
+
+            if (filter.name) {
+                lastIndexUsed++;
+                queryPart += ` AND tnw2.word_sets.title=$${lastIndexUsed}`;
+                queryPartParams.push(filter.name);
+            }
+
+            if (filter.foreign_language_id) {
+                lastIndexUsed++;
+                queryPart += ` AND tnw2.word_sets.original_language_id=$${lastIndexUsed}`;
+                queryPartParams.push(+filter.foreign_language_id);
+            }
+
+            if (filter.native_language_id) {
+                const sqlList: string[] = [];
+                filter.native_language_id.forEach(id => {
+                    lastIndexUsed++;
+                    sqlList.push(`$${lastIndexUsed}`);
+                    queryPartParams.push(+id);
+                })
+                queryPart += ` AND tnw2.word_sets.translated_language_id IN (${sqlList.join(', ')})`;
+            }
+
+            if (userId) {
+                queryResult = await queryDatabase(`SELECT tnw2.word_sets.id FROM tnw2.relation_users_word_sets LEFT JOIN tnw2.word_sets ON tnw2.relation_users_word_sets.word_set_id=tnw2.word_sets.id WHERE tnw2.relation_users_word_sets.user_id=$1${queryPart}`, [userId, ...queryPartParams]);
+            } else {
+                queryResult = await queryDatabase(`SELECT tnw2.word_sets.id FROM tnw2.relation_users_word_sets LEFT JOIN tnw2.word_sets ON tnw2.relation_users_word_sets.word_set_id=tnw2.word_sets.id WHERE 0=0${queryPart}`, queryPartParams);
+            }
+
             const result = queryResult.map(({id}) => Wordset.fromDb(id));
 
             return Promise.all(result);

@@ -22,6 +22,7 @@ export async function connectToDatabase(): Promise<PoolClient> {
 
 export async function queryDatabase<T = any, K = any>(query: string, params?: K[]): Promise<T[]> {
     try {
+        console.log(query, ',', params);
         return pool.query(query, params).then(({rows}) => rows);
     } catch (error) {
         throw new CustomError('QUERY_ERROR', {query, params, error});
