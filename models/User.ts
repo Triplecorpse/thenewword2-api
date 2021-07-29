@@ -7,6 +7,7 @@ import {Language} from './Language';
 import {languages} from '../const/constData';
 import {CustomError} from './CustomError';
 import {generateRefreshToken} from "../services/jwt";
+import {IDashboardDto} from "../interfaces/dto/IDashboardDto";
 
 const saltRounds = 10;
 
@@ -209,6 +210,18 @@ export class User implements ICRUDEntity<IUserDto> {
         } catch (error) {
             throw new CustomError('REFRESH_TOKEN_COMPARE_ERROR', error);
         }
+    }
+
+    async getStatistics(): Promise<IDashboardDto> {
+        return {
+            account_created: 's',
+            exercises_passed: 1,
+            my_learned_languages: 1,
+            my_native_language: 1,
+            my_subscribed_wordsets: 1,
+            my_wordsets: 1,
+            other_subscribed_wordsets: 1
+        };
     }
 
     static async fromDb(userId: number): Promise<User> {

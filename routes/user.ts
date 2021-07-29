@@ -163,3 +163,12 @@ userRouter.post('/validate-email', async (req: Request, res: Response) => {
         res.status(500).json(error);
     }
 });
+
+userRouter.get('/statistics', async (req: Request, res: Response) => {
+    try {
+        const user = await User.fromDb(req.user!.dbid!);
+        res.json(await user.getStatistics());
+    } catch (error) {
+        res.status(500).json(error);
+    }
+});
