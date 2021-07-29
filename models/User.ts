@@ -224,7 +224,7 @@ export class User implements ICRUDEntity<IUserDto> {
             exercises_passed: +exercisePassedResult[0]?.count,
             my_learned_languages: this.learningLanguages.length,
             my_native_languages: this.nativeLanguages.length,
-            my_subscribed_wordsets: iSubscribedToResult[0]?.count,
+            my_subscribed_wordsets: +iSubscribedToResult[0]?.count,
             other_subscribed_wordsets: +otherSubscribedToMineResult[0]?.count,
             my_wordsets: +myWordsetsResult[0]?.count,
         };
