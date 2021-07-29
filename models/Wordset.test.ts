@@ -12,9 +12,9 @@ describe('Wordset class', () => {
     beforeEach(() => {
         wordset = new Wordset({
             id: 1,
-            translated_language_id: 2,
+            native_language_id: 2,
             words_count: 20,
-            original_language_id: 3,
+            foreign_language_id: 3,
             name: 'sample'
         });
         wordset.translatedLanguage = new Language();
@@ -27,9 +27,9 @@ describe('Wordset class', () => {
         it('Should create an object from DTO interface', () => {
             const wordset = new Wordset({
                 id: 1,
-                translated_language_id: 2,
+                native_language_id: 2,
                 words_count: 20,
-                original_language_id: 3,
+                foreign_language_id: 3,
                 name: 'sample'
             });
 
@@ -41,7 +41,9 @@ describe('Wordset class', () => {
         });
 
         it('Should create an empty object and not throw any exception if no data is passed', () => {
-            expect(() => {new Wordset()}).not.toThrowError();
+            expect(() => {
+                new Wordset()
+            }).not.toThrowError();
         });
     });
 
@@ -56,19 +58,20 @@ describe('Wordset class', () => {
         })
     });
 
-    describe('loadFromDB',  () => {
+    describe('loadFromDB', () => {
 
     });
 
-    describe('remove', () => {});
+    describe('remove', () => {
+    });
 
     describe('replaceWith', () => {
         wordset.replaceWith({
             id: 12,
             name: 'name',
             words_count: 10,
-            original_language_id: 1,
-            translated_language_id: 1
+            foreign_language_id: 1,
+            native_language_id: 1
         });
 
         expect(wordset).toMatchObject({

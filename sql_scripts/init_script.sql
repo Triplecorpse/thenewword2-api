@@ -49,8 +49,8 @@ CREATE TABLE IF NOT EXISTS tnw2.words (
 CREATE TABLE IF NOT EXISTS tnw2.word_sets (
     id serial PRIMARY KEY,
     title text NOT NULL,
-    original_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,
-    translated_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,
+    foreign_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,
+    native_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,
     user_created_id integer REFERENCES tnw2.users(id),
     created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
     last_modified_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL

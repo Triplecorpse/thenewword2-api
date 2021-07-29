@@ -6,7 +6,7 @@ import {Gender} from './Gender';
 import {Language} from './Language';
 import {ICRUDEntity} from '../interfaces/ICRUDEntity';
 import {IWordFilterData} from '../interfaces/IWordFilterData';
-import {genders, speechParts, languages} from '../const/constData';
+import {genders, languages, speechParts} from '../const/constData';
 import {CustomError} from './CustomError';
 
 export interface IFilterFormValue {

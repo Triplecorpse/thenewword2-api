@@ -31,15 +31,13 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
         return {
             id: this.dbid,
             name: this.name,
-            original_language_id: this.originalLanguage.dbid,
-            translated_language_id: this.translatedLanguage.dbid,
+            foreign_language_id: this.originalLanguage.dbid,
+            native_language_id: this.translatedLanguage.dbid,
             words_count: this.wordsCount
         };
     }
 
     async loadFromDB(id: number): Promise<void> {
-        const query = 'SELECT id, title, original_language_id, translated_language_id, user_created_id FROM tnw2.word_sets WHERE id=$1';
-
         return Promise.resolve(undefined);
     }
 
@@ -50,8 +48,8 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
     replaceWith(entity: IWordSetDto): void {
         this.dbid = entity.id;
         this.name = entity.name;
-        this.originalLanguage = languages.find(l => l.dbid === entity.original_language_id) as Language;
-        this.translatedLanguage = languages.find(l => l.dbid === entity.translated_language_id) as Language;
+        this.originalLanguage = languages.find(l => l.dbid === entity.foreign_language_id) as Language;
+        this.translatedLanguage = languages.find(l => l.dbid === entity.native_language_id) as Language;
         this.wordsCount = entity.words_count;
     }
 
@@ -65,9 +63,9 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
             let userRelationQuery;
 
             if (this.dbid) {
-                query = 'UPDATE tnw2.word_sets SET title=$1, original_language_id=$2, translated_language_id=$3 last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$5 RETURNING *';
+                query = 'UPDATE tnw2.word_sets SET title=$1, foreign_language_id=$2, native_language_id=$3 last_modified_at=(NOW() AT TIME ZONE \'utc\') WHERE id=$5 RETURNING *';
             } else {
-                query = 'INSERT INTO tnw2.word_sets (title, original_language_id, translated_language_id, user_created_id) VALUES ($1, $2, $3, $4) RETURNING *';
+                query = 'INSERT INTO tnw2.word_sets (title, foreign_language_id, native_language_id, user_created_id) VALUES ($1, $2, $3, $4) RETURNING *';
                 userRelationQuery = 'INSERT INTO tnw2.relation_users_word_sets (user_id, word_set_id) VALUES ($1, $2)';
             }
 
@@ -89,8 +87,8 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
             const foundWordSet = result[0];
             const wordset = new Wordset();
             const user = await User.fromDb(foundWordSet.user_created_id);
-            const originalLanguage = await Language.fromDb(foundWordSet.original_language_id);
-            const translatedLanguage = await Language.fromDb(foundWordSet.translated_language_id);
+            const originalLanguage = await Language.fromDb(foundWordSet.foreign_language_id);
+            const translatedLanguage = await Language.fromDb(foundWordSet.native_language_id);
 
             wordset.dbid = foundWordSet.id;
             wordset.name = foundWordSet.title;
@@ -143,7 +141,7 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
 
             if (filter.foreign_language_id) {
                 lastIndexUsed++;
-                queryPart += ` AND tnw2.word_sets.original_language_id=$${lastIndexUsed}`;
+                queryPart += ` AND tnw2.word_sets.foreign_language_id=$${lastIndexUsed}`;
                 queryPartParams.push(+filter.foreign_language_id);
             }
 
@@ -154,7 +152,7 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
                     sqlList.push(`$${lastIndexUsed}`);
                     queryPartParams.push(+id);
                 })
-                queryPart += ` AND tnw2.word_sets.translated_language_id IN (${sqlList.join(', ')})`;
+                queryPart += ` AND tnw2.word_sets.native_language_id IN (${sqlList.join(', ')})`;
             }
 
             if (userId) {
