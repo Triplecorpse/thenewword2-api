@@ -15,6 +15,13 @@ wordsetRouter.post('/add', async (req: Request, res: Response) => {
         if (req.body.id) {
             throw new CustomError('ID_IN_EDIT');
         }
+        
+        if (req.body.wordset_id) {
+            await Wordset.subscribe(req.body.wordset_id, req.user!.dbid!);
+            const wordset = await Wordset.fromDb(req.body.wordset_id);
+            res.status(201).json(wordset.convertToDto());
+            return;
+        }
 
         const wordset = new Wordset(req.body);
 

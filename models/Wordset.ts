@@ -181,7 +181,7 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
     }
 
     static async subscribe(wordSetId: number, userId: number) {
-        const query = 'INSERT INTO tnw2.relation_users_word_sets (word_set_id, user_id) SET ($1, $2)';
+        const query = 'INSERT INTO tnw2.relation_users_word_sets (word_set_id, user_id) VALUES ($1, $2)';
 
         return queryDatabase(query, [wordSetId, userId]).then();
     }
