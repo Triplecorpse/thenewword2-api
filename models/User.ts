@@ -213,14 +213,20 @@ export class User implements ICRUDEntity<IUserDto> {
     }
 
     async getStatistics(): Promise<IDashboardDto> {
+        const dateCreatedResult = await queryDatabase('SELECT created_at FROM tnw2.users WHERE id=$1', [this.dbid]);
+        const exercisePassedResult = await queryDatabase('SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1', [this.dbid]);
+        const myWordsetsResult = await queryDatabase('SELECT count(*) FROM tnw2.relation_users_word_sets WHERE user_id=$1', [this.dbid]);
+        const iSubscribedToResult = await queryDatabase('SELECT count(*) FROM tnw2.relation_users_word_sets WHERE user_id=$1', [this.dbid]);
+        const otherSubscribedToMineResult = await queryDatabase('SELECT count(*) FROM tnw2.word_sets LEFT JOIN tnw2.relation_users_word_sets ON tnw2.word_sets.id=tnw2.relation_users_word_sets.word_set_id WHERE tnw2.relation_users_word_sets.user_id!=$1', [this.dbid]);
+
         return {
-            account_created: 's',
-            exercises_passed: 1,
-            my_learned_languages: 1,
-            my_native_language: 1,
-            my_subscribed_wordsets: 1,
-            my_wordsets: 1,
-            other_subscribed_wordsets: 1
+            account_created: dateCreatedResult[0]?.created_at,
+            exercises_passed: +exercisePassedResult[0]?.count,
+            my_learned_languages: this.learningLanguages.length,
+            my_native_languages: this.nativeLanguages.length,
+            my_subscribed_wordsets: iSubscribedToResult[0]?.count,
+            other_subscribed_wordsets: +otherSubscribedToMineResult[0]?.count,
+            my_wordsets: +myWordsetsResult[0]?.count,
         };
     }
 
