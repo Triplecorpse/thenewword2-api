@@ -59,10 +59,13 @@ wordsetRouter.get('/get', async (req: Request, res: Response) => {
         }
 
         const filter: IWordSetFilterData = req.query;
+        const wordSets = await Wordset.factoryLoad(filter);
+        const wordSetsDto = await Promise.all(wordSets.map(async wordset => {
+            const isSubscribed = await wordset.isUserSubscribed(req.user!.dbid!);
+            return {...wordset.convertToDto(), user_is_subscribed: isSubscribed}
+        }));
 
-        const wordsets = await Wordset.factoryLoad(filter);
-
-        res.json(wordsets.map(w => w.convertToDto()));
+        res.json(wordSetsDto);
     } catch (error) {
         if (error.name === 'USER_NOT_FOUND') {
             res.status(401).json(error);

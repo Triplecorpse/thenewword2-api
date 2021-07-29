@@ -33,7 +33,8 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
             name: this.name,
             foreign_language_id: this.originalLanguage.dbid,
             native_language_id: this.translatedLanguage.dbid,
-            words_count: this.wordsCount
+            words_count: this.wordsCount,
+            user_created_id: this.user.dbid
         };
     }
 
@@ -78,6 +79,16 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
             }
         } catch (error) {
             throw new CustomError('SAVE_FAILED', error);
+        }
+    }
+
+    async isUserSubscribed(userId: number): Promise<boolean> {
+        try {
+            const result = await queryDatabase('SELECT count(*) FROM tnw2.relation_users_word_sets WHERE user_id=$1 AND word_set_id=$2', [userId, this.dbid]);
+
+            return result[0]?.count > 0;
+        } catch (error) {
+            throw new CustomError('WORDSET_USER_SUBSCRIBED_ERROR', error);
         }
     }
 
