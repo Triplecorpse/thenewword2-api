@@ -1,5 +1,5 @@
 import {IWordDto} from '../interfaces/dto/IWordDto';
-import {queryDatabase} from '../services/db';
+import {queryDatabase, Transaction} from '../services/db';
 import {User} from './User';
 import {SpeechPart} from './SpeechPart';
 import {Gender} from './Gender';
@@ -35,6 +35,8 @@ export class Word implements ICRUDEntity<IWordDto> {
     }
 
     async save(): Promise<void> {
+        const transaction = new Transaction();
+
         try {
             let query;
             let relationUserQuery;
@@ -59,15 +61,18 @@ export class Word implements ICRUDEntity<IWordDto> {
                 relationUserQuery = 'INSERT INTO tnw2.relation_words_users (user_id, word_id) VALUES ($1, $2)';
             }
 
-            const result = await queryDatabase(query, params);
+            await transaction.BEGIN();
+            const result = await transaction.QUERY_LINE(query, params)
 
             this.dbid = result[0].id;
 
             if (relationUserQuery) {
-                await queryDatabase(relationUserQuery, [this.userCreated?.dbid, this.dbid]);
+                await transaction.QUERY_LINE(relationUserQuery, [this.userCreated?.dbid, this.dbid])
             }
+            await transaction.COMMIT();
         } catch (error) {
-            throw new CustomError('SAVE_FAILED', error);
+            await transaction.ROLLBACK();
+            throw new CustomError('WORD_SAVE_FAILED', error);
         }
     }
 

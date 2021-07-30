@@ -25,7 +25,7 @@ export async function connectToDatabase(): Promise<PoolClient> {
 
 export async function queryDatabase<T = any, K = any>(query: string, params?: K[]): Promise<T[]> {
     try {
-        console.log('QUERY', query, ',', params);
+        console.log('QUERY ::::', query, ',', params);
         return pool.query(query, params).then(({rows}) => rows);
     } catch (error) {
         throw new CustomError('DB_QUERY_ERROR', {query, params, error});
@@ -48,25 +48,25 @@ export class Transaction {
         this.client$ = pool.connect();
     }
 
-    get BEGIN() {
+    BEGIN() {
         return this.client$.then(client => {
             this.wasBegan = true;
             return client.query('BEGIN');
         });
     }
 
-    get COMMIT() {
+    COMMIT() {
         return this.client$.then(client => client.query('COMMIT'));
     }
 
-    get ROLLBACK() {
+    ROLLBACK() {
         return this.client$.then(client => client.query('ROLLBACK'));
     }
 
     async QUERY_LINE<T = any, K = any>(query: string, params?: K[]): Promise<any> {
         try {
-            console.log('TRANSACTION', query, ',', params);
-            return this.client$.then(client => client.query(query, params));
+            console.log('TRANSACTION ::::', query, ',', params);
+            return this.client$.then(client => client.query(query, params)).then(({rows}) => rows);
         } catch (error) {
             throw new CustomError('DB_TRANSACTION_QUERY_ERROR', {query, params, error});
         }
