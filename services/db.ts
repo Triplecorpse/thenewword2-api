@@ -33,22 +33,40 @@ export async function queryDatabase<T = any, K = any>(query: string, params?: K[
 }
 
 export class Transaction {
+    client$: Promise<PoolClient>;
+    wasBegan: boolean;
+
+    constructor() {
+        const pool = new Pool({
+            user: process.env.PGUSER,
+            host: process.env.PGHOST,
+            database: process.env.PGDATABASE,
+            password: process.env.PGPASSWORD,
+            port: Number(process.env.PGPORT)
+        });
+
+        this.client$ = pool.connect();
+    }
+
     get BEGIN() {
-        return client.query('BEGIN');
+        return this.client$.then(client => {
+            this.wasBegan = true;
+            return client.query('BEGIN');
+        });
     }
 
     get COMMIT() {
-        return client.query('COMMIT');
+        return this.client$.then(client => client.query('COMMIT'));
     }
 
     get ROLLBACK() {
-        return client.query('ROLLBACK');
+        return this.client$.then(client => client.query('ROLLBACK'));
     }
 
     async QUERY_LINE<T = any, K = any>(query: string, params?: K[]): Promise<any> {
         try {
             console.log('TRANSACTION', query, ',', params);
-            return client.query(query, params);
+            return this.client$.then(client => client.query(query, params));
         } catch (error) {
             throw new CustomError('DB_TRANSACTION_QUERY_ERROR', {query, params, error});
         }
