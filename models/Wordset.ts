@@ -9,7 +9,7 @@ import {languages} from "../const/constData";
 export interface IWordSetFilterData {
     user_created_login?: string;
     foreign_language_id?: number;
-    native_language_id?: number[];
+    native_language_id?: number[] | number;
     name?: string;
 }
 
@@ -157,12 +157,18 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
             }
 
             if (filter.native_language_id) {
+                if (typeof filter.native_language_id !== 'object') {
+                    filter.native_language_id = [filter.native_language_id];
+                }
+
                 const sqlList: string[] = [];
+
                 filter.native_language_id.forEach(id => {
                     lastIndexUsed++;
                     sqlList.push(`$${lastIndexUsed}`);
                     queryPartParams.push(+id);
-                })
+                });
+
                 queryPart += ` AND tnw2.word_sets.native_language_id IN (${sqlList.join(', ')})`;
             }
 
