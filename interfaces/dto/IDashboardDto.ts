@@ -6,4 +6,8 @@ export interface IDashboardDto {
     my_native_languages: number;
     exercises_passed: number;
     account_created: string;
+    words_right: number;
+    words_wrong: number;
+    words_skipped: number;
+    words_80: number;
 }

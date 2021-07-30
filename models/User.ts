@@ -214,19 +214,46 @@ export class User implements ICRUDEntity<IUserDto> {
 
     async getStatistics(): Promise<IDashboardDto> {
         const dateCreatedResult = await queryDatabase('SELECT created_at FROM tnw2.users WHERE id=$1', [this.dbid]);
-        const exercisePassedResult = await queryDatabase('SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1', [this.dbid]);
+        const wordsRightResult = await queryDatabase("SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1 AND status='right'", [this.dbid]);
+        const wordsWrongResult = await queryDatabase("SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1 AND status='wrong'", [this.dbid]);
+        const wordsSkippedResult = await queryDatabase("SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1 AND status='skipped'", [this.dbid]);
         const myWordsetsResult = await queryDatabase('SELECT count(*) FROM tnw2.relation_users_word_sets WHERE user_id=$1', [this.dbid]);
         const iSubscribedToResult = await queryDatabase('SELECT count(*) FROM tnw2.relation_users_word_sets WHERE user_id=$1', [this.dbid]);
         const otherSubscribedToMineResult = await queryDatabase('SELECT count(*) FROM tnw2.word_sets LEFT JOIN tnw2.relation_users_word_sets ON tnw2.word_sets.id=tnw2.relation_users_word_sets.word_set_id WHERE tnw2.relation_users_word_sets.user_id!=$1', [this.dbid]);
 
+        const words80Result1 = await queryDatabase('SELECT word_id, status FROM tnw2.word_statistics WHERE user_id=$1', [this.dbid]);
+        const wordStat: { [key: number]: string[] } = {};
+        let words80 = 0;
+        words80Result1.forEach(wordResult => {
+            if (wordStat[wordResult.word_id]) {
+                wordStat[wordResult.word_id].push(wordResult.status);
+            } else {
+                wordStat[wordResult.word_id] = [wordResult.status];
+            }
+        });
+
+        Object.keys(wordStat).forEach(key => {
+            const value = wordStat[+key];
+            const rightTimes = value.filter(v => v === 'right').length;
+            const wrongOrSkippedTimes = value.filter(v => v === ('wrong' || 'skipped')).length;
+
+            if (rightTimes / (rightTimes + wrongOrSkippedTimes) >= .8 && value.length >= 10) {
+                words80++;
+            }
+        });
+
         return {
             account_created: dateCreatedResult[0]?.created_at,
-            exercises_passed: +exercisePassedResult[0]?.count,
+            exercises_passed: +wordsRightResult[0]?.count + +wordsWrongResult[0]?.count + +wordsSkippedResult[0]?.count,
             my_learned_languages: this.learningLanguages.length,
             my_native_languages: this.nativeLanguages.length,
             my_subscribed_wordsets: +iSubscribedToResult[0]?.count,
             other_subscribed_wordsets: +otherSubscribedToMineResult[0]?.count,
             my_wordsets: +myWordsetsResult[0]?.count,
+            words_right: +wordsRightResult[0]?.count,
+            words_wrong: +wordsWrongResult[0]?.count,
+            words_skipped: +wordsSkippedResult[0]?.count,
+            words_80: words80
         };
     }
 
