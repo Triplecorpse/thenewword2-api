@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest --config ./jest.config.ts --coverage --verbose true",
     "start": "nodemon --config \"./util/nodemon.json\"/ -- dev",
+    "build": "tsc",
     "generate-locales": "ts-node dev-services/locales.ts"
   },
   "repository": {
