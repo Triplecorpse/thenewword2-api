@@ -127,6 +127,8 @@ export class User implements ICRUDEntity<IUserDto> {
                     } else {
                         throw new CustomError('USER_SAVE_ERROR', error);
                     }
+                } else {
+                    throw new CustomError('USER_SAVE_ERROR', error);
                 }
             }
         }
