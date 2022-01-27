@@ -59,6 +59,10 @@ userRouter.post('/login', async (req: Request, res: Response) => {
 
 userRouter.post('/refresh', async (req: Request, res: Response) => {
     try {
+        if (!req.body.user_id) {
+            throw new CustomError('REFRESH_TOKEN_USER_ID_ERROR');
+        }
+
         const user = await User.fromDb(req.body.user_id);
         const refresh = await user.compareRefreshToken(req.body.refresh);
 
