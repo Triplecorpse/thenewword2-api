@@ -12,7 +12,7 @@ import {Gender} from './models/Gender';
 import {SpeechPart} from './models/SpeechPart';
 import {Language} from './models/Language';
 import {wordsetRouter} from './routes/wordset';
-import {KeyMapper} from "./models/KeyMapper";
+import {KeyMapper} from './models/KeyMapper';
 
 dotenv.config();
 
