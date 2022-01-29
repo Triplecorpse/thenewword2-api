@@ -50,7 +50,8 @@ userRouter.post('/login', async (req: Request, res: Response) => {
             token: webtoken,
             login: user.login,
             native_languages: user.nativeLanguages?.map(({dbid}) => dbid),
-            learning_languages: user.learningLanguages.map(lang => lang.dbid)
+            learning_languages: user.learningLanguages.map(lang => lang.dbid),
+            map_cyrillic: user.mapCyrillic
         });
     } catch (error) {
         res.status(400).json(error);
@@ -84,8 +85,7 @@ userRouter.post('/refresh', async (req: Request, res: Response) => {
 
 userRouter.post('/modify', async (req: Request, res: Response) => {
     try {
-        if (!req.user
-            || req.user.dbid !== req.body.id) {
+        if (!req.user || req.user.dbid !== req.body.id) {
             throw new CustomError('USER_UPDATE_ERROR', {
                 message: 'Didn\'t pass route checks',
                 reqUser: req.user,
@@ -106,7 +106,7 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
         if ((req.body.new_password || req.body.email) && !req.body.password) {
             throw new CustomError('USER_SECURITY_CHECK_ERROR', {message: 'Password should be provided on security settings change'})
         }
-
+        console.log(req.body);
         user.replaceWith({
             ...req.body,
             password: req.body.new_password

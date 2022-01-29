@@ -6,8 +6,8 @@ import {ICRUDEntity} from '../interfaces/ICRUDEntity';
 import {Language} from './Language';
 import {languages} from '../const/constData';
 import {CustomError} from './CustomError';
-import {generateRefreshToken} from "../services/jwt";
-import {IDashboardDto} from "../interfaces/dto/IDashboardDto";
+import {generateRefreshToken} from '../services/jwt';
+import {IDashboardDto} from '../interfaces/dto/IDashboardDto';
 
 const saltRounds = 10;
 
@@ -19,6 +19,7 @@ export class User implements ICRUDEntity<IUserDto> {
     passwordHash?: string = '';
     nativeLanguages: Language[] = [];
     learningLanguages: Language[] = [];
+    mapCyrillic: boolean;
 
     constructor(user?: IUserDto) {
         this.replaceWith(user);
@@ -26,7 +27,7 @@ export class User implements ICRUDEntity<IUserDto> {
 
     async loadFromDB(loginOrEmail: string, password: string): Promise<void> {
         try {
-            const dbResult = await queryDatabase('SELECT tnw2.users.id, tnw2.users.login, tnw2.users.email, tnw2.users.password, tnw2.relation_users_learning_language.language_id AS learning_languages_ids, tnw2.relation_users_native_language.language_id AS native_languages_ids FROM tnw2.users LEFT JOIN tnw2.relation_users_learning_language ON tnw2.relation_users_learning_language.user_id = tnw2.users.id LEFT JOIN tnw2.relation_users_native_language ON tnw2.relation_users_native_language.user_id = tnw2.users.id WHERE login = $1 OR email = $1', [loginOrEmail]);
+            const dbResult = await queryDatabase('SELECT tnw2.users.id, tnw2.users.login, tnw2.users.email, tnw2.users.password, tnw2.users.map_cyrillic, tnw2.relation_users_learning_language.language_id AS learning_languages_ids, tnw2.relation_users_native_language.language_id AS native_languages_ids FROM tnw2.users LEFT JOIN tnw2.relation_users_learning_language ON tnw2.relation_users_learning_language.user_id = tnw2.users.id LEFT JOIN tnw2.relation_users_native_language ON tnw2.relation_users_native_language.user_id = tnw2.users.id WHERE login = $1 OR email = $1', [loginOrEmail]);
 
             if (!dbResult.length) {
                 throw new CustomError('USER_NOT_FOUND');
@@ -45,6 +46,7 @@ export class User implements ICRUDEntity<IUserDto> {
                 this.email = user.email;
                 this.passwordHash = user.password;
                 this.dbid = user.id;
+                this.mapCyrillic = user.map_cyrillic;
                 this.nativeLanguages = languages.filter(lang => nativeLanguages.includes(lang.dbid));
                 this.learningLanguages = languages.filter(lang => learningLanguages.includes(lang.dbid));
             }
@@ -90,10 +92,11 @@ export class User implements ICRUDEntity<IUserDto> {
 
         if (this.dbid) {
             try {
-                await queryDatabase('UPDATE tnw2.users SET (password, email, last_modified_at) = ($1, $2, (NOW() AT TIME ZONE \'utc\')) WHERE id = $3 RETURNING *', [
+                await queryDatabase('UPDATE tnw2.users SET (password, email, last_modified_at, map_cyrillic) = ($1, $2, (NOW() AT TIME ZONE \'utc\'), $4) WHERE id = $3 RETURNING *', [
                     this.passwordHash,
                     this.email,
-                    this.dbid
+                    this.dbid,
+                    this.mapCyrillic
                 ]);
 
                 // TODO: Optimize updating learning languages
@@ -110,11 +113,12 @@ export class User implements ICRUDEntity<IUserDto> {
         } else {
             try {
                 const refreshToken = await util.promisify(bcrypt.hash)(generateRefreshToken(), saltRounds) as string;
-                const user = await queryDatabase('INSERT INTO tnw2.users (login, password, email, active_refresh_token) VALUES($1, $2, $3, $4) RETURNING *', [
+                const user = await queryDatabase('INSERT INTO tnw2.users (login, password, email, active_refresh_token, map_cyrillic) VALUES($1, $2, $3, $4, $5) RETURNING *', [
                     this.login,
                     this.passwordHash,
                     this.email,
-                    refreshToken
+                    refreshToken,
+                    this.mapCyrillic
                 ]);
 
                 this.dbid = user[0].id;
@@ -169,7 +173,8 @@ export class User implements ICRUDEntity<IUserDto> {
             email: this.email,
             login: this.login,
             native_languages: this.nativeLanguages?.map(ll => ll.dbid),
-            learning_languages: this.learningLanguages?.map(ll => ll.dbid)
+            learning_languages: this.learningLanguages?.map(ll => ll.dbid),
+            map_cyrillic: this.mapCyrillic
         } as IUserDto;
     }
 
@@ -183,6 +188,7 @@ export class User implements ICRUDEntity<IUserDto> {
         this.learningLanguages = entity?.learning_languages
             ? languages.filter(l => entity?.learning_languages?.includes(l.dbid))
             : this.learningLanguages;
+        this.mapCyrillic = entity?.map_cyrillic || false;
     }
 
     async remove(): Promise<void> {
@@ -216,9 +222,9 @@ export class User implements ICRUDEntity<IUserDto> {
 
     async getStatistics(): Promise<IDashboardDto> {
         const dateCreatedResult = await queryDatabase('SELECT created_at FROM tnw2.users WHERE id=$1', [this.dbid]);
-        const wordsRightResult = await queryDatabase("SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1 AND status='right'", [this.dbid]);
-        const wordsWrongResult = await queryDatabase("SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1 AND status='wrong'", [this.dbid]);
-        const wordsSkippedResult = await queryDatabase("SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1 AND status='skipped'", [this.dbid]);
+        const wordsRightResult = await queryDatabase('SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1 AND status=\'right\'', [this.dbid]);
+        const wordsWrongResult = await queryDatabase('SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1 AND status=\'wrong\'', [this.dbid]);
+        const wordsSkippedResult = await queryDatabase('SELECT count(*) FROM tnw2.word_statistics WHERE user_id=$1 AND status=\'skipped\'', [this.dbid]);
         const myWordsetsResult = await queryDatabase('SELECT count(*) FROM tnw2.relation_users_word_sets WHERE user_id=$1', [this.dbid]);
         const iSubscribedToResult = await queryDatabase('SELECT count(*) FROM tnw2.relation_users_word_sets WHERE user_id=$1', [this.dbid]);
         const otherSubscribedToMineResult = await queryDatabase('SELECT count(*) FROM tnw2.word_sets LEFT JOIN tnw2.relation_users_word_sets ON tnw2.word_sets.id=tnw2.relation_users_word_sets.word_set_id WHERE tnw2.relation_users_word_sets.user_id!=$1', [this.dbid]);
@@ -272,6 +278,7 @@ export class User implements ICRUDEntity<IUserDto> {
             user.login = result[0].login;
             user.passwordHash = result[0].password;
             user.email = result[0].email;
+            user.mapCyrillic = result[0].map_cyrillic;
             user.nativeLanguages = nativeLanguages;
             user.learningLanguages = learningLanguages;
 

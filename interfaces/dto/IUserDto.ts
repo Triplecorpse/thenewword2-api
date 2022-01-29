@@ -6,4 +6,5 @@ export interface IUserDto {
     email: string;
     native_languages: number[];
     learning_languages: number[];
+    map_cyrillic: boolean;
 }

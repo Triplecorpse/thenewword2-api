@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS tnw2.users (
     created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
     last_modified_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
     last_issued_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
-    active_refresh_token char(60) NOT NULL
+    active_refresh_token char(60) NOT NULL,
+    map_cyrillic boolean NOT NULL DEFAULT false
 );
 CREATE TABLE IF NOT EXISTS tnw2.words (
     id serial PRIMARY KEY,
