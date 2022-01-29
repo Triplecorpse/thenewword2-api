@@ -114,7 +114,8 @@ describe('User class', () => {
                 learning_languages: [2, 3, 4],
                 native_languages: [1],
                 email: 'email@domain.com',
-                new_password: 'new_password'
+                new_password: 'new_password',
+                map_cyrillic: false
             });
 
             expect(user.login).toBe('login2');
