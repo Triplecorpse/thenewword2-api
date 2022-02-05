@@ -1,5 +1,5 @@
 import {IUserDto} from '../interfaces/dto/IUserDto';
-import {queryDatabase} from '../services/db';
+import {queryDatabase, Transaction} from '../services/db';
 import * as util from 'util';
 import * as bcrypt from 'bcrypt';
 import {ICRUDEntity} from '../interfaces/ICRUDEntity';
@@ -90,9 +90,13 @@ export class User implements ICRUDEntity<IUserDto> {
             throw new CustomError('NO_PASSWORD_PROVIDED');
         }
 
+        const transaction = new Transaction();
+
+        await transaction.BEGIN();
+
         if (this.dbid) {
             try {
-                await queryDatabase('UPDATE tnw2.users SET (password, email, last_modified_at, map_cyrillic) = ($1, $2, (NOW() AT TIME ZONE \'utc\'), $4) WHERE id = $3 RETURNING *', [
+                await transaction.QUERY_LINE('UPDATE tnw2.users SET (password, email, last_modified_at, map_cyrillic) = ($1, $2, (NOW() AT TIME ZONE \'utc\'), $4) WHERE id = $3 RETURNING *', [
                     this.passwordHash,
                     this.email,
                     this.dbid,
@@ -100,20 +104,21 @@ export class User implements ICRUDEntity<IUserDto> {
                 ]);
 
                 // TODO: Optimize updating learning languages
-                await queryDatabase('DELETE FROM tnw2.relation_users_learning_language WHERE user_id = $1', [
+                await transaction.QUERY_LINE('DELETE FROM tnw2.relation_users_learning_language WHERE user_id = $1', [
                     this.dbid
                 ]);
 
-                await queryDatabase('DELETE FROM tnw2.relation_users_native_language WHERE user_id = $1', [
+                await transaction.QUERY_LINE('DELETE FROM tnw2.relation_users_native_language WHERE user_id = $1', [
                     this.dbid
                 ]);
             } catch (error) {
+                await transaction.ROLLBACK();
                 throw new CustomError('USER_UPDATE_ERROR', error);
             }
         } else {
             try {
                 const refreshToken = await util.promisify(bcrypt.hash)(generateRefreshToken(), saltRounds) as string;
-                const user = await queryDatabase('INSERT INTO tnw2.users (login, password, email, active_refresh_token, map_cyrillic) VALUES($1, $2, $3, $4, $5) RETURNING *', [
+                const user = await transaction.QUERY_LINE('INSERT INTO tnw2.users (login, password, email, active_refresh_token, map_cyrillic) VALUES($1, $2, $3, $4, $5) RETURNING *', [
                     this.login,
                     this.passwordHash,
                     this.email,
@@ -123,6 +128,7 @@ export class User implements ICRUDEntity<IUserDto> {
 
                 this.dbid = user[0].id;
             } catch (error) {
+                await transaction.ROLLBACK();
                 if (error.code === '23505') {
                     if (error.constraint === 'users_login_key') {
                         throw new CustomError('LOGIN_EXISTS');
@@ -142,11 +148,12 @@ export class User implements ICRUDEntity<IUserDto> {
                 const queryPart =
                     this.learningLanguages.map((lang, index) => `($1, $${index + 2})`).join(', ');
 
-                await queryDatabase(`INSERT INTO tnw2.relation_users_learning_language (user_id, language_id) VALUES ${queryPart} RETURNING *`, [
+                await transaction.QUERY_LINE(`INSERT INTO tnw2.relation_users_learning_language (user_id, language_id) VALUES ${queryPart} RETURNING *`, [
                     this.dbid,
                     ...this.learningLanguages.map(lang => lang.dbid)
                 ]);
             } catch (error) {
+                await transaction.ROLLBACK();
                 throw new CustomError('LEARNING_LANGUAGES_SAVE_ERROR', error);
             }
         }
@@ -156,14 +163,17 @@ export class User implements ICRUDEntity<IUserDto> {
                 const queryPart =
                     this.nativeLanguages.map((lang, index) => `($1, $${index + 2})`).join(', ');
 
-                await queryDatabase(`INSERT INTO tnw2.relation_users_native_language (user_id, language_id) VALUES ${queryPart} RETURNING *`, [
+                await transaction.QUERY_LINE(`INSERT INTO tnw2.relation_users_native_language (user_id, language_id) VALUES ${queryPart} RETURNING *`, [
                     this.dbid,
                     ...this.nativeLanguages.map(lang => lang.dbid)
                 ]);
             } catch (error) {
+                await transaction.ROLLBACK();
                 throw new CustomError('NATIVE_LANGUAGES_SAVE_ERROR', error);
             }
         }
+
+        await transaction.COMMIT();
     }
 
     convertToDto(): IUserDto {

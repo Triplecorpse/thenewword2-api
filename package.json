@@ -1,6 +1,6 @@
 {
   "name": "thenewword2-api",
-  "version": "0.0.1",
+  "version": "0.8.1",
   "description": "Api server for new word tutor",
   "main": "app.ts",
   "scripts": {
@@ -37,6 +37,7 @@
     "nodemon": "^2.0.4",
     "onchange": "^7.1.0",
     "serve": "^11.3.2",
+    "simple-node-logger": "^21.8.12",
     "source-map-support": "^0.5.19",
     "ts-jest": "^27.0.2",
     "ts-node": "^9.0.0",

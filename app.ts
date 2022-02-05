@@ -13,6 +13,7 @@ import {SpeechPart} from './models/SpeechPart';
 import {Language} from './models/Language';
 import {wordsetRouter} from './routes/wordset';
 import {KeyMapper} from './models/KeyMapper';
+import './services/logger'
 
 dotenv.config();
 
@@ -47,7 +48,7 @@ connectToDatabase()
     })
     .then(() => {
         app.listen(process.env.PORT, () => {
-            console.log('listening on port', process.env.PORT);
+            console.log('listening on port ', process.env.PORT);
         });
     });
 
