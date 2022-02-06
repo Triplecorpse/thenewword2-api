@@ -70,10 +70,10 @@ export async function queryDatabase<T = any, K = any>(query: string, params: K[]
             }
         });
 
-        console.log('');
-        console.log('ORIGINAL_QUERY :::: ', query, ' :::: ', params);
-        console.log('PREPARED_QUERY :::: ', preparedQuery, ' :::: ', preparedParams);
-        console.log('');
+        console.debug('');
+        console.debug('ORIGINAL_QUERY :::: ', query, ' :::: ', params);
+        console.debug('PREPARED_QUERY :::: ', preparedQuery, ' :::: ', preparedParams);
+        console.debug('');
 
         return pool.query(preparedQuery, preparedParams).then(({rows}) => rows);
     } catch (error) {

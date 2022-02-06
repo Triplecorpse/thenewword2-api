@@ -6,9 +6,9 @@ import * as simpleNodeLogger from 'simple-node-logger';
         timestampFormat: 'YYYY-MM-DDTHH:mm:ssZ'
     });
 
-    // console.log = (...args: any[]) => {
-    //     logger.log('info', args);
-    // };
+    console.log = (...args: any[]) => {
+        logger.log('info', args);
+    };
 
     console.warn = (...args: any[]) => {
         logger.warn('warn', args);

@@ -14,4 +14,5 @@ export interface IWordDto {
     stress_letter_index: number;
     user_created?: IUserDto;
     word_set_id?: number;
+    threshold?: number;
 }

@@ -29,6 +29,7 @@ export class Word implements ICRUDEntity<IWordDto> {
     remarks?: string;
     stressLetterIndex?: number;
     userCreated?: User;
+    threshold?: number;
 
     constructor(word?: IWordDto, user?: User) {
         this.replaceWith(word, user);
@@ -139,7 +140,8 @@ export class Word implements ICRUDEntity<IWordDto> {
             id: this.dbid,
             original_language_id: this.originalLanguage?.dbid,
             translated_language_id: this.translatedLanguage?.dbid,
-            speech_part_id: this.speechPart?.dbid
+            speech_part_id: this.speechPart?.dbid,
+            threshold: this.threshold
         } as IWordDto;
     }
 
@@ -164,6 +166,14 @@ export class Word implements ICRUDEntity<IWordDto> {
         const query = 'DELETE FROM tnw2.words WHERE id=$1';
 
         return queryDatabase(query, [this.dbid]).then();
+    }
+
+    async setThreshold(userId: number): Promise<void> {
+        const result = await queryDatabase('SELECT status, COUNT(*) from tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status', [userId, this.dbid]);
+        const right = result.filter(({status}) => status === 'right');
+        const threshold = right.length / (result.length - right.length);
+
+        this.threshold = threshold === Infinity ? -1 : threshold;
     }
 
     static async subscribeToWordSet(wordId: number, wordSetId: number): Promise<void> {
@@ -244,9 +254,9 @@ export class Word implements ICRUDEntity<IWordDto> {
             let overAllResult = [];
 
             if (filter.wordset.length) {
-                let $n: string[] = [];
+                const $n: string[] = [];
 
-                filter.wordset.forEach((ws_id, index) => {
+                filter.wordset.forEach((wsId, index) => {
                     $n.push(`$${index + 1}`);
                 })
 
@@ -255,7 +265,10 @@ export class Word implements ICRUDEntity<IWordDto> {
                 filterByWordsetResult = await queryDatabase(`SELECT word_id from tnw2.relation_words_word_sets WHERE word_set_id IN ${queryPart} ORDER BY random() LIMIT $${filter.wordset.length + 1}`, [...filter.wordset, filter.limit]);
                 filterByWordsetResult = filterByWordsetResult.map(({word_id}) => word_id);
 
-                return Promise.all(filterByWordsetResult.map(id => Word.fromDb(id)));
+                const words2 = await Promise.all(filterByWordsetResult.map(id => Word.fromDb(id)));
+                await Promise.all(words2.map(word => word.setThreshold(userId)));
+
+                return words2;
             }
 
             filterByLanguageResult = await queryDatabase('SELECT tnw2.relation_words_users.word_id FROM tnw2.relation_words_users LEFT JOIN tnw2.words ON tnw2.relation_words_users.word_id=tnw2.words.id WHERE tnw2.words.original_language_id=$1 AND tnw2.relation_words_users.user_id=$2 ORDER BY random() LIMIT $3', [filter.language, userId, filter.limit]);
@@ -264,7 +277,7 @@ export class Word implements ICRUDEntity<IWordDto> {
             overAllResult = [...new Set([...filterByWordsetResult, ...filterByLanguageResult])];
 
             const words: Word[] = await Promise.all(overAllResult.map(id => Word.fromDb(id)));
-
+            await Promise.all(words.map(word => word.setThreshold(userId)));
 
             return words;
         } catch (error) {
@@ -283,8 +296,10 @@ export class Word implements ICRUDEntity<IWordDto> {
     static async getExerciseInProgressItems(userId: number): Promise<Word[]> {
         try {
             const exerciseInProgress = await queryDatabase('SELECT word_id as id FROM tnw2.exercise_in_progress WHERE user_id=$1', [userId]);
+            const words = await Promise.all(exerciseInProgress.map(({id}) => Word.fromDb(id)));
+            await Promise.all(words.map(word => word.setThreshold(userId)));
 
-            return await Promise.all(exerciseInProgress.map(({id}) => Word.fromDb(id)));
+            return words;
         } catch (error) {
             throw new CustomError('EXERCISE_IN_PROGRESS_GET_ERROR', error);
         }
