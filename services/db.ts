@@ -23,10 +23,59 @@ export async function connectToDatabase(): Promise<PoolClient> {
     }
 }
 
-export async function queryDatabase<T = any, K = any>(query: string, params?: K[]): Promise<T[]> {
+export async function queryDatabase<T = any, K = any>(query: string, params: K[] = []): Promise<T[]> {
     try {
-        console.log('QUERY ::::', query, ',', params);
-        return pool.query(query, params).then(({rows}) => rows);
+        let maxIndex = (query.match(/[$]\d+/g) || [])
+            .map(value => +value.substring(1))
+            .reduce((prev, next) => (prev > next) ? prev : next, 0);
+        const preparedParams: K[] = [];
+        let preparedQuery = query;
+
+        params.forEach((param, index) => {
+            if (Array.isArray(param)) {
+                const preparedParam = param.map((paramItem) => {
+                    let preparedParamItem;
+
+                    switch (typeof paramItem) {
+                        case 'string':
+                            preparedParamItem = `'${paramItem}'`;
+                            break;
+                        default:
+                            preparedParamItem = paramItem;
+                    }
+
+                    return preparedParamItem;
+                });
+                const queryStringArray = [];
+
+                for (let i = maxIndex; i < maxIndex + preparedParam.length; i++) {
+                    queryStringArray.push(`$${i + 1}`);
+                }
+
+                queryStringArray.unshift(`$${index + 1}`);
+                queryStringArray.pop();
+
+                maxIndex += preparedParam.length;
+
+                const paramString = queryStringArray.join(', ');
+
+                preparedParam.forEach(paramItem => {
+                    preparedParams.push(paramItem as K);
+                });
+
+                preparedParams[index] = preparedParam.shift();
+                preparedQuery = preparedQuery.replace(`$${index + 1}`, `(${paramString})`);
+            } else {
+                preparedParams.push(param);
+            }
+        });
+
+        console.log('');
+        console.log('ORIGINAL_QUERY :::: ', query, ' :::: ', params);
+        console.log('PREPARED_QUERY :::: ', preparedQuery, ' :::: ', preparedParams);
+        console.log('');
+
+        return pool.query(preparedQuery, preparedParams).then(({rows}) => rows);
     } catch (error) {
         throw new CustomError('DB_QUERY_ERROR', {query, params, error});
     }
@@ -37,7 +86,7 @@ export class Transaction {
     wasBegan: boolean;
 
     constructor() {
-        const pool = new Pool({
+        const transactionPool = new Pool({
             user: process.env.PGUSER,
             host: process.env.PGHOST,
             database: process.env.PGDATABASE,
@@ -45,28 +94,29 @@ export class Transaction {
             port: Number(process.env.PGPORT)
         });
 
-        this.client$ = pool.connect();
+        this.client$ = transactionPool.connect();
     }
 
     BEGIN() {
-        return this.client$.then(client => {
+        return this.client$.then(transactionalClient => {
             this.wasBegan = true;
-            return client.query('BEGIN');
+            return transactionalClient.query('BEGIN');
         });
     }
 
     COMMIT() {
-        return this.client$.then(client => client.query('COMMIT'));
+        return this.client$.then(transactionalClient => transactionalClient.query('COMMIT'));
     }
 
     ROLLBACK() {
-        return this.client$.then(client => client.query('ROLLBACK'));
+        return this.client$.then(transactionalClient => transactionalClient.query('ROLLBACK'));
     }
 
     async QUERY_LINE<T = any, K = any>(query: string, params?: K[]): Promise<any> {
         try {
             console.log('TRANSACTION ::::', query, ',', params);
-            return this.client$.then(client => client.query(query, params)).then(({rows}) => rows);
+
+            return this.client$.then(transactionalClient => transactionalClient.query(query, params)).then(({rows}) => rows);
         } catch (error) {
             throw new CustomError('DB_TRANSACTION_QUERY_ERROR', {query, params, error});
         }
