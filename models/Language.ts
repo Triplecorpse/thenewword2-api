@@ -85,26 +85,6 @@ export class Language implements ILanguage, IReadOnlyEntity<ILanguage, ILanguage
         }
     }
 
-    static async fromDbMultiple(ids: number[]): Promise<Language[]> {
-        try {
-            const result = await queryDatabase('SELECT * from tnw2.languages WHERE id IN $1', [ids]);
-
-            return this.mapDbToObj(result);
-        } catch (error) {
-            throw new CustomError('GENERIC_DB_ERROR', error)
-        }
-    }
-
-    static async fromDbAll(): Promise<Language[]> {
-        try {
-            const result = await queryDatabase('SELECT * from tnw2.languages');
-
-            return this.mapDbToObj(result);
-        } catch (error) {
-            throw new CustomError('GENERIC_DB_ERROR', error)
-        }
-    }
-
     private static mapDbToObj(db: any[]): Language[] {
         return db.map(resultItem => {
             const language = new Language();

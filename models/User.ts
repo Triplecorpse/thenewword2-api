@@ -47,8 +47,8 @@ export class User implements ICRUDEntity<IUserDto> {
                 this.passwordHash = user.password;
                 this.dbid = user.id;
                 this.mapCyrillic = user.map_cyrillic;
-                this.nativeLanguages = await Language.fromDbMultiple(nativeLanguages);
-                this.learningLanguages = await Language.fromDbMultiple(learningLanguages);
+                this.nativeLanguages = languages.filter(lang => nativeLanguages.includes(lang.dbid));
+                this.learningLanguages = languages.filter(lang => learningLanguages.includes(lang.dbid));
             }
         } catch (error) {
             if (['USER_NOT_FOUND', 'PASSWORD_CHECK_FAILED'].includes(error.name)) {
