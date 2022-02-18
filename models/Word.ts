@@ -30,6 +30,7 @@ export class Word implements ICRUDEntity<IWordDto> {
     stressLetterIndex?: number;
     userCreated?: User;
     threshold?: number;
+    timesInExercise?: number;
 
     constructor(word?: IWordDto, user?: User) {
         this.replaceWith(word, user);
@@ -141,7 +142,8 @@ export class Word implements ICRUDEntity<IWordDto> {
             original_language_id: this.originalLanguage?.dbid,
             translated_language_id: this.translatedLanguage?.dbid,
             speech_part_id: this.speechPart?.dbid,
-            threshold: this.threshold
+            threshold: this.threshold,
+            times_in_exercise: this.timesInExercise
         } as IWordDto;
     }
 
@@ -182,7 +184,8 @@ export class Word implements ICRUDEntity<IWordDto> {
             };
         })(this);
 
-        this.threshold = statuses.right / (statuses.right + statuses.wrong + statuses.skipped);
+        this.timesInExercise = statuses.right + statuses.wrong + statuses.skipped;
+        this.threshold = statuses.right / this.timesInExercise;
     }
 
     static async subscribeToWordSet(wordId: number, wordSetId: number): Promise<void> {

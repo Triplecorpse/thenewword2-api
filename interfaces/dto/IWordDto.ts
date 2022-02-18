@@ -15,4 +15,5 @@ export interface IWordDto {
     user_created?: IUserDto;
     word_set_id?: number;
     threshold?: number;
+    times_in_exercise?: number;
 }
