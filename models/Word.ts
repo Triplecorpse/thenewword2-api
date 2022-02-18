@@ -8,6 +8,7 @@ import {ICRUDEntity} from '../interfaces/ICRUDEntity';
 import {IWordFilterData} from '../interfaces/IWordFilterData';
 import {genders, languages, speechParts} from '../const/constData';
 import {CustomError} from './CustomError';
+import {ITimeInterval} from "../interfaces/ITimeInterval";
 
 export interface IFilterFormValue {
     wordset: number[];
@@ -31,6 +32,7 @@ export class Word implements ICRUDEntity<IWordDto> {
     userCreated?: User;
     threshold?: number;
     timesInExercise?: number;
+    lastIssued?: ITimeInterval;
 
     constructor(word?: IWordDto, user?: User) {
         this.replaceWith(word, user);
@@ -143,7 +145,8 @@ export class Word implements ICRUDEntity<IWordDto> {
             translated_language_id: this.translatedLanguage?.dbid,
             speech_part_id: this.speechPart?.dbid,
             threshold: this.threshold,
-            times_in_exercise: this.timesInExercise
+            times_in_exercise: this.timesInExercise,
+            last_issued: this.lastIssued
         } as IWordDto;
     }
 
@@ -172,20 +175,71 @@ export class Word implements ICRUDEntity<IWordDto> {
 
     async setThreshold(userId: number): Promise<void> {
         const statuses = await (async function (context) {
-            const result = await queryDatabase('SELECT status, COUNT(*) from tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status', [userId, context.dbid]);
+            const result = await queryDatabase('SELECT status, COUNT(*), CURRENT_TIMESTAMP - MAX(created_at) as last_issued from tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status', [userId, context.dbid]);
             const right = result.find(({status}) => status === 'right');
             const wrong = result.find(({status}) => status === 'wrong');
             const skipped = result.find(({status}) => status === 'skipped');
+            const __max = function (time1: ITimeInterval, time2: ITimeInterval): ITimeInterval {
+                console.log(time1, time2);
+                if (time1 && !time2) {
+                    return time1;
+                }
+
+                if (time2 && !time1) {
+                    return time2;
+                }
+
+                if (time1.years !== time2.years) {
+                    const yearsMax = Math.max(time1.years, time2.years);
+                    return time1.years === yearsMax ? time1 : time2;
+                }
+
+                if (time1.mons !== time2.mons) {
+                    const monsMax = Math.max(time1.mons, time2.mons);
+                    return time1.mons === monsMax ? time1 : time2;
+                }
+
+                if (time1.days !== time2.days) {
+                    const daysMax = Math.max(time1.days, time2.days);
+                    return time1.days === daysMax ? time1 : time2;
+                }
+
+                if (time1.hours !== time2.hours) {
+                    const hoursMax = Math.max(time1.hours, time2.hours);
+                    return time1.hours === hoursMax ? time1 : time2;
+                }
+
+                if (time1.minutes !== time2.minutes) {
+                    const minutesMax = Math.max(time1.minutes, time2.minutes);
+                    return time1.minutes === minutesMax ? time1 : time2;
+                }
+
+                if (time1.seconds !== time2.seconds) {
+                    const secondsMax = Math.max(time1.seconds, time2.seconds);
+                    return time1.seconds === secondsMax ? time1 : time2;
+                }
+
+                if (time1.milliseconds !== time2.milliseconds) {
+                    const millisecondsMax = Math.max(time1.milliseconds, time2.milliseconds);
+                    return time1.milliseconds === millisecondsMax ? time1 : time2;
+                }
+
+                return time1;
+            };
+
+            const lastIssued = __max(skipped?.last_issued, __max(right?.last_issued, wrong?.last_issued));
 
             return {
                 right: right ? +right.count : 0,
                 wrong: wrong ? +wrong.count : 0,
-                skipped: skipped ? +skipped.count : 0
+                skipped: skipped ? +skipped.count : 0,
+                lastIssued
             };
         })(this);
 
         this.timesInExercise = statuses.right + statuses.wrong + statuses.skipped;
         this.threshold = statuses.right / this.timesInExercise;
+        this.lastIssued = statuses.lastIssued;
     }
 
     static async subscribeToWordSet(wordId: number, wordSetId: number): Promise<void> {

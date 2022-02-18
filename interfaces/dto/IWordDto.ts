@@ -16,4 +16,5 @@ export interface IWordDto {
     word_set_id?: number;
     threshold?: number;
     times_in_exercise?: number;
+    last_issued?: ITimeInterval;
 }
