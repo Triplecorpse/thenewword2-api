@@ -4,19 +4,19 @@ CREATE TYPE word_status AS ENUM ('right', 'wrong', 'skipped');
 CREATE TABLE IF NOT EXISTS tnw2.speech_parts
 (
     id serial PRIMARY KEY,
-    title text NOT NULL
+    title text NOT NULL UNIQUE
 );
 CREATE TABLE IF NOT EXISTS tnw2.genders
 (
     id serial PRIMARY KEY,
-    title text NOT NULL
+    title text NOT NULL UNIQUE
 );
 CREATE TABLE IF NOT EXISTS tnw2.languages
 (
     id serial PRIMARY KEY,
-    iso2 char(2) NOT NULL,
-    english_name text,
-    native_name text,
+    iso2 char(2) NOT NULL UNIQUE,
+    english_name text UNIQUE,
+    native_name text UNIQUE,
     rtl boolean
 );
 
@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS tnw2.users (
     login text NOT NULL UNIQUE CHECK(login != ''),
     password text NOT NULL,
     email text NOT NULL UNIQUE CHECK(email != ''),
-    created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
-    last_modified_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
-    last_issued_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    last_modified_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    last_issued_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
     active_refresh_token char(60) NOT NULL,
     map_cyrillic boolean NOT NULL DEFAULT false
 );
@@ -44,8 +44,9 @@ CREATE TABLE IF NOT EXISTS tnw2.words (
     remarks text,
     user_created_id integer REFERENCES tnw2.users(id),
     stress_letter_index smallint,
-    created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
-    last_modified_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    last_modified_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (word, translations, original_language_id, translated_language_id)
 );
 CREATE TABLE IF NOT EXISTS tnw2.word_sets (
     id serial PRIMARY KEY,
@@ -53,8 +54,8 @@ CREATE TABLE IF NOT EXISTS tnw2.word_sets (
     foreign_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,
     native_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,
     user_created_id integer REFERENCES tnw2.users(id),
-    created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
-    last_modified_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    last_modified_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
     id serial PRIMARY KEY,
@@ -70,33 +71,39 @@ CREATE TABLE IF NOT EXISTS tnw2.exercise_in_progress (
 );
 CREATE TABLE IF NOT EXISTS tnw2.special_letters (
     id serial PRIMARY KEY,
-    letter char(1) NOT NULL
+    letter char(1) NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS tnw2.relation_words_users (
     user_id integer NOT NULL REFERENCES tnw2.users(id),
-    word_id integer NOT NULL REFERENCES tnw2.words(id)
+    word_id integer NOT NULL REFERENCES tnw2.words(id),
+    UNIQUE(user_id, word_id)
 );
 CREATE TABLE IF NOT EXISTS tnw2.relation_words_word_sets (
     word_set_id integer NOT NULL REFERENCES tnw2.word_sets(id),
-    word_id integer NOT NULL REFERENCES tnw2.words(id)
+    word_id integer NOT NULL REFERENCES tnw2.words(id),
+    UNIQUE(word_set_id, word_id)
 );
 CREATE TABLE IF NOT EXISTS tnw2.relation_users_word_sets (
     user_id integer NOT NULL REFERENCES tnw2.users(id),
-    word_set_id integer NOT NULL REFERENCES tnw2.word_sets(id)
+    word_set_id integer NOT NULL REFERENCES tnw2.word_sets(id),
+    UNIQUE(user_id, word_set_id)
 );
 CREATE TABLE IF NOT EXISTS tnw2.relation_users_learning_language (
     user_id integer NOT NULL REFERENCES tnw2.users(id),
-    language_id integer NOT NULL REFERENCES tnw2.languages(id)
+    language_id integer NOT NULL REFERENCES tnw2.languages(id),
+    UNIQUE(user_id, language_id)
 );
 CREATE TABLE IF NOT EXISTS tnw2.relation_users_native_language (
     user_id integer NOT NULL REFERENCES tnw2.users(id),
-    language_id integer NOT NULL REFERENCES tnw2.languages(id)
+    language_id integer NOT NULL REFERENCES tnw2.languages(id),
+    UNIQUE(user_id, language_id)
 );
 CREATE TABLE IF NOT EXISTS tnw2.relation_users_learning_language_special_letters (
     user_id integer REFERENCES tnw2.users(id),
     language_id integer NOT NULL REFERENCES tnw2.languages(id),
-    letter_id integer NOT NULL REFERENCES tnw2.special_letters(id)
+    letter_id integer NOT NULL REFERENCES tnw2.special_letters(id),
+    UNIQUE(user_id, language_id, letter_id)
 );
 -- Add new speech parts to the end only
 INSERT INTO tnw2.speech_parts (title)

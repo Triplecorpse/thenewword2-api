@@ -169,11 +169,20 @@ export class Word implements ICRUDEntity<IWordDto> {
     }
 
     async setThreshold(userId: number): Promise<void> {
-        const result = await queryDatabase('SELECT status, COUNT(*) from tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status', [userId, this.dbid]);
-        const right = result.filter(({status}) => status === 'right');
-        const threshold = right.length / (result.length - right.length);
+        const statuses = await (async function (context) {
+            const result = await queryDatabase('SELECT status, COUNT(*) from tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status', [userId, context.dbid]);
+            const right = result.find(({status}) => status === 'right');
+            const wrong = result.find(({status}) => status === 'wrong');
+            const skipped = result.find(({status}) => status === 'skipped');
 
-        this.threshold = threshold === Infinity ? -1 : threshold;
+            return {
+                right: right ? +right.count : 0,
+                wrong: wrong ? +wrong.count : 0,
+                skipped: skipped ? +skipped.count : 0
+            };
+        })(this);
+
+        this.threshold = statuses.right / (statuses.right + statuses.wrong + statuses.skipped);
     }
 
     static async subscribeToWordSet(wordId: number, wordSetId: number): Promise<void> {
