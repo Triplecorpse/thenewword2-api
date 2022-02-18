@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS tnw2.users (
     login text NOT NULL UNIQUE CHECK(login != ''),
     password text NOT NULL,
     email text NOT NULL UNIQUE CHECK(email != ''),
-    created_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    last_modified_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    last_issued_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
+    last_modified_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
+    last_issued_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
     active_refresh_token char(60) NOT NULL,
     map_cyrillic boolean NOT NULL DEFAULT false
 );
@@ -44,8 +44,8 @@ CREATE TABLE IF NOT EXISTS tnw2.words (
     remarks text,
     user_created_id integer REFERENCES tnw2.users(id),
     stress_letter_index smallint,
-    created_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    last_modified_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
+    last_modified_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
     UNIQUE (word, translations, original_language_id, translated_language_id)
 );
 CREATE TABLE IF NOT EXISTS tnw2.word_sets (
@@ -54,8 +54,8 @@ CREATE TABLE IF NOT EXISTS tnw2.word_sets (
     foreign_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,
     native_language_id smallint REFERENCES tnw2.languages(id) NOT NULL,
     user_created_id integer REFERENCES tnw2.users(id),
-    created_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    last_modified_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL,
+    last_modified_at timestamp DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
 );
 CREATE TABLE IF NOT EXISTS tnw2.word_statistics (
     id serial PRIMARY KEY,

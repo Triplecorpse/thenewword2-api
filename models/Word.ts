@@ -175,12 +175,12 @@ export class Word implements ICRUDEntity<IWordDto> {
 
     async setThreshold(userId: number): Promise<void> {
         const statuses = await (async function (context) {
-            const result = await queryDatabase('SELECT status, COUNT(*), CURRENT_TIMESTAMP - MAX(created_at) as last_issued from tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status', [userId, context.dbid]);
+            const result = await queryDatabase('SELECT status, COUNT(*), (NOW() AT TIME ZONE \'utc\') - MAX(created_at) as last_issued from tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status', [userId, context.dbid]);
             const right = result.find(({status}) => status === 'right');
             const wrong = result.find(({status}) => status === 'wrong');
             const skipped = result.find(({status}) => status === 'skipped');
+
             const __max = function (time1: ITimeInterval, time2: ITimeInterval): ITimeInterval {
-                console.log(time1, time2);
                 if (time1 && !time2) {
                     return time1;
                 }
