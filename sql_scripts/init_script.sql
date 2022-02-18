@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS tnw2.speech_parts
 CREATE TABLE IF NOT EXISTS tnw2.genders
 (
     id serial PRIMARY KEY,
-    title text NOT NULL UNIQUE
+    title text NOT NULL UNIQUE,
+    shortcut char(1) NOT NULL UNIQUE
 );
 CREATE TABLE IF NOT EXISTS tnw2.languages
 (
@@ -73,6 +74,13 @@ CREATE TABLE IF NOT EXISTS tnw2.special_letters (
     id serial PRIMARY KEY,
     letter char(1) NOT NULL UNIQUE
 );
+CREATE TABLE IF NOT EXISTS tnw2.articles (
+    id serial PRIMARY KEY,
+    language_id integer NOT NULL REFERENCES tnw2.languages(id),
+    gender_id integer NOT NULL REFERENCES tnw2.genders(id),
+    article text NOT NULL,
+    UNIQUE(language_id, gender_id)
+);
 
 CREATE TABLE IF NOT EXISTS tnw2.relation_words_users (
     user_id integer NOT NULL REFERENCES tnw2.users(id),
@@ -122,10 +130,10 @@ VALUES ('noun'),
        ('transgressive'),
        ('article');
 -- Add new genders to the end only
-INSERT INTO tnw2.genders (title)
-VALUES ('masculine'),
-       ('feminine'),
-       ('neutral');
+INSERT INTO tnw2.genders (title, shortcut)
+VALUES ('masculine', 'm'),
+       ('feminine', 'f'),
+       ('neutral', 'n');
 -- Add new languages to the end only
 INSERT INTO tnw2.languages (iso2, english_name, native_name, rtl)
 VALUES ('aa', 'Afar', 'Afar', false),
@@ -327,6 +335,10 @@ VALUES ('à'), ('á'), ('â'), ('ä'), ('æ'), ('ã'), ('å'), ('ā'), ('ă'), (
        ('ћ'), ('є'), ('ї'), ('ґ'), ('і'), ('ј'), ('ą'), ('ħ'), ('ș'), ('ѻ'), -- 90
        ('Ȣ'), ('ѡ'), ('ꙑ'), ('ѣ'), ('ꙗ'), ('ѥ'), ('ѧ'), ('ѫ'), ('ѯ'), ('ѱ'), -- 100
        ('ѳ'), ('ѵ'), ('ꙟ'), ('ľ'), ('ě');
+-- Add new genders to the end only
+INSERT INTO tnw2.articles (article, language_id, gender_id)
+VALUES ('la', 47, 2), ('le', 47, 1), -- French
+       ('die', 32, 2), ('der', 32, 1), ('das', 32, 3); -- German
 INSERT INTO tnw2.relation_users_learning_language_special_letters (language_id, letter_id)
 VALUES (13, 85), (13, 75), -- Belarusian
        (103, 76), (103, 71), (103, 86), (103, 79), (103, 80), (103, 77), (103, 72), -- Macedonian
