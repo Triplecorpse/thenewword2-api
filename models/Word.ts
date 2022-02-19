@@ -174,71 +174,25 @@ export class Word implements ICRUDEntity<IWordDto> {
     }
 
     async setThreshold(userId: number): Promise<void> {
+        console.log("userId");
         const statuses = await (async function (context) {
-            const result = await queryDatabase('SELECT status, COUNT(*), (NOW() AT TIME ZONE \'utc\') - MAX(created_at) as last_issued from tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status', [userId, context.dbid]);
+            const initialQuery = 'SELECT status, COUNT(*), (NOW() AT TIME ZONE \'utc\') - MAX(created_at) as last_issued from tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status';
+            const result = await queryDatabase(initialQuery, [userId, context.dbid]);
+            const minInterval: any = await queryDatabase(`SELECT MIN(last_issued) as last_issued FROM (${initialQuery}) as ad`, [userId, context.dbid]);
             const right = result.find(({status}) => status === 'right');
             const wrong = result.find(({status}) => status === 'wrong');
             const skipped = result.find(({status}) => status === 'skipped');
-
-            const __max = function (time1: ITimeInterval, time2: ITimeInterval): ITimeInterval {
-                if (time1 && !time2) {
-                    return time1;
-                }
-
-                if (time2 && !time1) {
-                    return time2;
-                }
-
-                if (time1.years !== time2.years) {
-                    const yearsMax = Math.max(time1.years, time2.years);
-                    return time1.years === yearsMax ? time1 : time2;
-                }
-
-                if (time1.mons !== time2.mons) {
-                    const monsMax = Math.max(time1.mons, time2.mons);
-                    return time1.mons === monsMax ? time1 : time2;
-                }
-
-                if (time1.days !== time2.days) {
-                    const daysMax = Math.max(time1.days, time2.days);
-                    return time1.days === daysMax ? time1 : time2;
-                }
-
-                if (time1.hours !== time2.hours) {
-                    const hoursMax = Math.max(time1.hours, time2.hours);
-                    return time1.hours === hoursMax ? time1 : time2;
-                }
-
-                if (time1.minutes !== time2.minutes) {
-                    const minutesMax = Math.max(time1.minutes, time2.minutes);
-                    return time1.minutes === minutesMax ? time1 : time2;
-                }
-
-                if (time1.seconds !== time2.seconds) {
-                    const secondsMax = Math.max(time1.seconds, time2.seconds);
-                    return time1.seconds === secondsMax ? time1 : time2;
-                }
-
-                if (time1.milliseconds !== time2.milliseconds) {
-                    const millisecondsMax = Math.max(time1.milliseconds, time2.milliseconds);
-                    return time1.milliseconds === millisecondsMax ? time1 : time2;
-                }
-
-                return time1;
-            };
-
-            const lastIssued = __max(skipped?.last_issued, __max(right?.last_issued, wrong?.last_issued));
 
             return {
                 right: right ? +right.count : 0,
                 wrong: wrong ? +wrong.count : 0,
                 skipped: skipped ? +skipped.count : 0,
-                lastIssued
+                lastIssued: minInterval[0]?.last_issued
             };
         })(this);
 
         this.timesInExercise = statuses.right + statuses.wrong + statuses.skipped;
-        this.threshold = statuses.right / this.timesInExercise;
+        this.threshold = (statuses.right / this.timesInExercise) || 0;
         this.lastIssued = statuses.lastIssued;
     }
 
