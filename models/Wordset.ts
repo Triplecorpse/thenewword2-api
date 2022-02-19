@@ -8,6 +8,7 @@ import {languages} from "../const/constData";
 
 export interface IWordSetFilterData {
     user_created_login?: string;
+    user_subscribed_id?: number;
     foreign_language_id?: number;
     native_language_id?: number[] | number;
     name?: string;
@@ -140,8 +141,19 @@ export class Wordset implements ICRUDEntity<IWordSetDto> {
             let queryResult;
             let queryPart = '';
             let queryPartParams = [];
-            const userIdResult = await queryDatabase('SELECT id FROM tnw2.users WHERE login=$1', [filter.user_created_login]);
-            const userId = userIdResult[0]?.id;
+            const userId = await (async function () {
+                if (filter.user_subscribed_id) {
+                    return filter.user_subscribed_id;
+                }
+
+                const userIdResult = await queryDatabase('SELECT id FROM tnw2.users WHERE login=$1', [filter.user_created_login]);
+
+                if (userIdResult[0]?.id) {
+                    return userIdResult[0]?.id;
+                }
+
+                throw new CustomError('GET_WORDSETS_ERROR');
+            })();
             let lastIndexUsed = userId ? 1 : 0;
 
             if (filter.name) {

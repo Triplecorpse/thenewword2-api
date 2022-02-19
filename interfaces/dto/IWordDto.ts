@@ -1,4 +1,5 @@
 import {IUserDto} from './IUserDto';
+import {ITimeInterval} from "../ITimeInterval";
 
 export interface IWordDto {
     id?: number;
