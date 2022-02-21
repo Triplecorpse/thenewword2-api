@@ -265,7 +265,7 @@ export class Word implements ICRUDEntity<IWordDto> {
                 return words2;
             }
 
-            const result = await (async (context: any, filter: IFilterFormValue, userId: number): Promise<Word[]> => {
+            return await (async (context: any, filter: IFilterFormValue, userId: number): Promise<Word[]> => {
                 const initialQuery = 'SELECT tnw2.word_statistics.status, tnw2.word_statistics.created_at as timestamp, tnw2.words.id FROM tnw2.word_statistics LEFT JOIN tnw2.words ON tnw2.word_statistics.word_id=tnw2.words.id WHERE user_id = $1 AND tnw2.words.original_language_id=$2 ORDER BY random()';
                 const queryResult = await queryDatabase(initialQuery, [userId, filter.language]);
                 const result: { [key: number]: any } = {};
@@ -282,10 +282,21 @@ export class Word implements ICRUDEntity<IWordDto> {
                 Object.keys(result).forEach(key => {
                     const value = result[+key];
 
-                    if (value.find((item: any) => item.status === 'right' && (Date.now() - new Date(item.timestamp).valueOf()) <= 259200000)) {
+                    value.sort((a: any, b: any) => a.timestamp < b.timestamp ? 1 : -1);
+
+                    const right = value.filter((item: any) => item.status === 'right');
+                    const ratioIsLow = (right.length / value.length) < .8;
+                    const lastIsRight = value[0].status === 'right';
+
+                    if (value.find((item: any) => item.status === 'right' && (Date.now() - new Date(item.timestamp).valueOf()) <= 259200000) && lastIsRight && ratioIsLow) {
                         idsToSkip.push(+key);
                     }
                 });
+
+                if (Object.keys(result).length - idsToSkip.length < filter.limit) {
+                    const toSlice = Object.keys(result).length - idsToSkip.length;
+                    idsToSkip.slice(0, toSlice);
+                }
 
                 idsToSkip.forEach(id => {
                     delete result[id];
@@ -293,12 +304,11 @@ export class Word implements ICRUDEntity<IWordDto> {
 
                 const indexes = Object.keys(result).slice(0, filter.limit);
                 const words = await Word.fromDbMulti(indexes.map(i => +i));
+
                 await Promise.all(words.map(async word => await word.setThreshold(userId)));
 
                 return await Promise.all(words);
             })(this, filter, userId);
-
-            return result;
         } catch (error) {
             throw new CustomError('GET_WORDS_ERROR', error);
         }
