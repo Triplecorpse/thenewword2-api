@@ -118,7 +118,7 @@ export class Transaction {
 
     async QUERY_LINE<T = any, K = any>(query: string, params?: K[]): Promise<any> {
         try {
-            console.log('TRANSACTION ::::', query, ',', params);
+            console.debug('TRANSACTION ::::', query, ',', params);
 
             return this.client$.then(transactionalClient => transactionalClient.query(query, params)).then(({rows}) => rows);
         } catch (error) {
