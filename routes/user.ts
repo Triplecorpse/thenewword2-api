@@ -106,7 +106,7 @@ userRouter.post('/modify', async (req: Request, res: Response) => {
         if ((req.body.new_password || req.body.email) && !req.body.password) {
             throw new CustomError('USER_SECURITY_CHECK_ERROR', {message: 'Password should be provided on security settings change'})
         }
-        console.log(req.body);
+
         user.replaceWith({
             ...req.body,
             password: req.body.new_password

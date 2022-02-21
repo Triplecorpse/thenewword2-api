@@ -33,6 +33,10 @@ export async function queryDatabase<T = any, K = any>(query: string, params: K[]
 
         params.forEach((param, index) => {
             if (Array.isArray(param)) {
+                if (!param.length) {
+                    throw new CustomError('DB_QUERY_ERROR', 'Array parameters could not be empty');
+                }
+
                 const preparedParam = param.map((paramItem) => {
                     let preparedParamItem;
 

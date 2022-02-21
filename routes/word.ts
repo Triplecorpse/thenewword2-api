@@ -160,8 +160,7 @@ wordRouter.get('/exercise', async (req: Request, res: Response) => {
         const words = await Word.getWordsToExercise({
             wordset: req.query.wordset ? (req.query.wordset as string).split(',').map(ws => +ws) : [],
             limit: +(req.query.limit as string),
-            language: +(req.query.language as string),
-            threshold: +(req.query.threshold as string)
+            language: +(req.query.language as string)
         }, req.user.dbid!);
 
         res.json(words.map(word => word.convertToDto()));

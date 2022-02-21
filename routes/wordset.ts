@@ -71,7 +71,7 @@ wordsetRouter.get('/get', async (req: Request, res: Response) => {
             ...req.query,
             user_subscribed_id: req.user.dbid!
         };
-        console.log(filter);
+
         const wordSets = await Wordset.factoryLoad(filter);
         const wordSetsDto = await Promise.all(wordSets.map(async wordset => {
             const isSubscribed = await wordset.isUserSubscribed(req.user!.dbid!);

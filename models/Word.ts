@@ -13,7 +13,6 @@ import {ITimeInterval} from "../interfaces/ITimeInterval";
 export interface IFilterFormValue {
     wordset: number[];
     language: number;
-    threshold: number;
     limit: number;
 }
 
@@ -174,11 +173,9 @@ export class Word implements ICRUDEntity<IWordDto> {
     }
 
     async setThreshold(userId: number): Promise<void> {
-        console.log("userId");
         const statuses = await (async function (context) {
-            const initialQuery = 'SELECT status, COUNT(*), (NOW() AT TIME ZONE \'utc\') - MAX(created_at) as last_issued from tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status';
+            const initialQuery = 'SELECT status, COUNT(*), (NOW() AT TIME ZONE \'utc\') - MAX(created_at) as last_issued FROM tnw2.word_statistics WHERE user_id = $1 AND word_id = $2 GROUP BY status';
             const result = await queryDatabase(initialQuery, [userId, context.dbid]);
-            const minInterval: any = await queryDatabase(`SELECT MIN(last_issued) as last_issued FROM (${initialQuery}) as ad`, [userId, context.dbid]);
             const right = result.find(({status}) => status === 'right');
             const wrong = result.find(({status}) => status === 'wrong');
             const skipped = result.find(({status}) => status === 'skipped');
@@ -187,7 +184,7 @@ export class Word implements ICRUDEntity<IWordDto> {
                 right: right ? +right.count : 0,
                 wrong: wrong ? +wrong.count : 0,
                 skipped: skipped ? +skipped.count : 0,
-                lastIssued: minInterval[0]?.last_issued
+                lastIssued: right?.last_issued
             };
         })(this);
 
@@ -205,34 +202,11 @@ export class Word implements ICRUDEntity<IWordDto> {
     }
 
     static async fromDb(id: number): Promise<Word> {
-        try {
-            const result = await queryDatabase('SELECT * from tnw2.words WHERE id=$1', [id]);
-            const foundResult = result[0];
-            const word = new Word();
+        return await this.byId(id) as Word;
+    }
 
-            word.dbid = foundResult.id;
-            word.word = foundResult.word;
-            word.remarks = foundResult.remarks;
-            word.forms = foundResult.forms;
-            word.translations = foundResult.translations;
-            word.originalLanguage = await Language.fromDb(foundResult.original_language_id);
-            word.translatedLanguage = await Language.fromDb(foundResult.translated_language_id);
-            word.userCreated = await User.fromDb(foundResult.user_created_id);
-            word.transcription = foundResult.transcription;
-            word.stressLetterIndex = foundResult.stress_letter_index;
-
-            if (foundResult.speech_part_id) {
-                word.speechPart = await SpeechPart.fromDb(foundResult.speech_part_id);
-            }
-
-            if (foundResult.gender_id) {
-                word.gender = await Gender.fromDb(foundResult.gender_id);
-            }
-
-            return word;
-        } catch (error) {
-            throw new CustomError('GET_WORDS_ERROR', error);
-        }
+    static async fromDbMulti(id: number[]): Promise<Word[]> {
+        return await this.byId(id) as Word[];
     }
 
     static async searchByWordSetId(wordSetId: number): Promise<Word[]> {
@@ -291,15 +265,40 @@ export class Word implements ICRUDEntity<IWordDto> {
                 return words2;
             }
 
-            filterByLanguageResult = await queryDatabase('SELECT tnw2.relation_words_users.word_id FROM tnw2.relation_words_users LEFT JOIN tnw2.words ON tnw2.relation_words_users.word_id=tnw2.words.id WHERE tnw2.words.original_language_id=$1 AND tnw2.relation_words_users.user_id=$2 ORDER BY random() LIMIT $3', [filter.language, userId, filter.limit]);
-            filterByLanguageResult = filterByLanguageResult.map(({word_id}) => word_id);
+            const result = await (async (context: any, filter: IFilterFormValue, userId: number): Promise<Word[]> => {
+                const initialQuery = 'SELECT tnw2.word_statistics.status, tnw2.word_statistics.created_at as timestamp, tnw2.words.id FROM tnw2.word_statistics LEFT JOIN tnw2.words ON tnw2.word_statistics.word_id=tnw2.words.id WHERE user_id = $1 AND tnw2.words.original_language_id=$2 ORDER BY random()';
+                const queryResult = await queryDatabase(initialQuery, [userId, filter.language]);
+                const result: { [key: number]: any } = {};
+                const idsToSkip: number[] = [];
 
-            overAllResult = [...new Set([...filterByWordsetResult, ...filterByLanguageResult])];
+                queryResult.forEach(item => {
+                    if (result[item.id]) {
+                        result[item.id].push(item);
+                    } else {
+                        result[item.id] = [item];
+                    }
+                });
 
-            const words: Word[] = await Promise.all(overAllResult.map(id => Word.fromDb(id)));
-            await Promise.all(words.map(word => word.setThreshold(userId)));
+                Object.keys(result).forEach(key => {
+                    const value = result[+key];
 
-            return words;
+                    if (value.find((item: any) => item.status === 'right' && (Date.now() - new Date(item.timestamp).valueOf()) <= 259200000)) {
+                        idsToSkip.push(+key);
+                    }
+                });
+
+                idsToSkip.forEach(id => {
+                    delete result[id];
+                });
+
+                const indexes = Object.keys(result).slice(0, filter.limit);
+                const words = await Word.fromDbMulti(indexes.map(i => +i));
+                await Promise.all(words.map(async word => await word.setThreshold(userId)));
+
+                return await Promise.all(words);
+            })(this, filter, userId);
+
+            return result;
         } catch (error) {
             throw new CustomError('GET_WORDS_ERROR', error);
         }
@@ -349,6 +348,46 @@ export class Word implements ICRUDEntity<IWordDto> {
             return await Promise.all(result$);
         } catch (error) {
             throw new CustomError('GET_WORDS_BY_USER_INPUT_ERROR', error)
+        }
+    }
+
+    private static async byId(id: number | number[]): Promise<Word | Word[]> {
+        try {
+            if (Array.isArray(id) && !id.length) {
+                return [];
+            }
+
+            const symbol = typeof id === 'number' ? '=' : 'IN';
+            const result = await queryDatabase(`SELECT * from tnw2.words WHERE id ${symbol} $1`, [id]);
+
+            const words = result.map(async (foundResult) => {
+                const word = new Word();
+
+                word.dbid = foundResult.id;
+                word.word = foundResult.word;
+                word.remarks = foundResult.remarks;
+                word.forms = foundResult.forms;
+                word.translations = foundResult.translations;
+                word.originalLanguage = await Language.fromDb(foundResult.original_language_id);
+                word.translatedLanguage = await Language.fromDb(foundResult.translated_language_id);
+                word.userCreated = await User.fromDb(foundResult.user_created_id);
+                word.transcription = foundResult.transcription;
+                word.stressLetterIndex = foundResult.stress_letter_index;
+
+                if (foundResult.speech_part_id) {
+                    word.speechPart = await SpeechPart.fromDb(foundResult.speech_part_id);
+                }
+
+                if (foundResult.gender_id) {
+                    word.gender = await Gender.fromDb(foundResult.gender_id);
+                }
+
+                return word;
+            });
+
+            return typeof id === "number" ? await words[0] : await Promise.all(words);
+        } catch (error) {
+            throw new CustomError('GET_WORDS_ERROR', error);
         }
     }
 }
