@@ -19,7 +19,7 @@ export class User implements ICRUDEntity<IUserDto> {
     passwordHash?: string = '';
     nativeLanguages: Language[] = [];
     learningLanguages: Language[] = [];
-    mapCyrillic: boolean;
+    mapCyrillic: boolean = false;
 
     constructor(user?: IUserDto) {
         this.replaceWith(user);
@@ -198,7 +198,7 @@ export class User implements ICRUDEntity<IUserDto> {
         this.learningLanguages = entity?.learning_languages
             ? languages.filter(l => entity?.learning_languages?.includes(l.dbid))
             : this.learningLanguages;
-        this.mapCyrillic = entity?.map_cyrillic || false;
+        this.mapCyrillic = entity?.map_cyrillic || this.mapCyrillic;
     }
 
     async remove(): Promise<void> {
