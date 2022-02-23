@@ -244,8 +244,6 @@ export class Word implements ICRUDEntity<IWordDto> {
     static async getWordsToExercise(filter: IFilterFormValue, userId: number): Promise<Word[]> {
         try {
             let filterByWordsetResult: any[] = [];
-            let filterByLanguageResult: any[] = [];
-            let overAllResult = [];
 
             if (filter.wordset.length) {
                 const $n: string[] = [];
