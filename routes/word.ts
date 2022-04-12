@@ -150,12 +150,15 @@ wordRouter.get('/exercise', async (req: Request, res: Response) => {
         if (!req.user) {
             throw new CustomError('USER_NOT_FOUND');
         }
-        const currentExercise = await Word.getExerciseInProgressItems(req.user.dbid!);
 
-        if (currentExercise.length) {
-            res.json(currentExercise.map(word => word.convertToDto()))
-            return;
-        }
+        // TODO: Implement exercise finishing
+        // const currentExercise = await Word.getExerciseInProgressItems(req.user.dbid!);
+        //
+        //
+        // if (currentExercise.length) {
+        //     res.json(currentExercise.map(word => word.convertToDto()))
+        //     return;
+        // }
 
         const words = await Word.getWordsToExercise({
             wordset: req.query.wordset ? (req.query.wordset as string).split(',').map(ws => +ws) : [],
