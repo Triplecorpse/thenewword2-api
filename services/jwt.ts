@@ -3,9 +3,9 @@ import * as util from 'util';
 import * as jwt from 'jsonwebtoken'
 import {IUserTokenPayload} from '../interfaces/IUserTokenPayload';
 import {User} from '../models/User';
-import * as bcrypt from "bcrypt";
-import {TokenExpiredError} from "jsonwebtoken";
-import {CustomError} from "../models/CustomError";
+import * as bcrypt from 'bcrypt';
+import {TokenExpiredError} from 'jsonwebtoken';
+import {CustomError} from '../models/CustomError';
 
 dotenv.config();
 
